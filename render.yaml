@@ -1,0 +1,15 @@
+# Render Blueprint — one free web service running server.js.
+# New → Blueprint → pick this repo, and Render reads this file.
+services:
+  - type: web
+    name: ntupm-songguesser-live
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /join-info
+    envVars:
+      - key: HOST_KEY          # host screen password; see its value under Environment in the dashboard
+        generateValue: true
+      - key: NODE_VERSION
+        value: "22"

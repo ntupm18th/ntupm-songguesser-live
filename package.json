@@ -1,0 +1,20 @@
+{
+  "name": "pm-songguesser-live",
+  "version": "1.0.0",
+  "private": true,
+  "description": "金曲猜歌王 現場版 — Kahoot-style live multiplayer song quiz",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "loadtest": "node tools/loadtest.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "ws": "^8.21.3"
+  },
+  "repository": "github:ntupm18th/ntupm-songguesser-live"
+}

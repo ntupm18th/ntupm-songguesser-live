@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0B0C18">
+<title>金曲猜歌王 · 現場版</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700;900&display=swap">
+<link rel="stylesheet" href="base.css">
+<style>
+.screen{
+  min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;
+  padding:max(var(--s6),env(safe-area-inset-top)) var(--s5) max(var(--s6),env(safe-area-inset-bottom));
+  max-width:30rem;margin:0 auto;width:100%;
+}
+.center{justify-content:center;align-items:center;text-align:center;gap:var(--s5)}
+
+/* ── join ── */
+#s-join{justify-content:flex-end;gap:var(--s5)}
+.brand h1{font-weight:var(--w-title);font-size:clamp(2.6rem,13vw,3rem);line-height:1.14;letter-spacing:.04em;margin:var(--s2) 0 var(--s3);color:var(--bottle)}
+.brand .live{display:inline-block;margin-left:var(--s2);padding:2px 8px;border-radius:4px;background:var(--miss);color:var(--night);font-size:.75rem;letter-spacing:.1em;vertical-align:middle;font-weight:var(--w-strong)}
+.slogan{font-weight:var(--w-quiet);font-size:.8125rem;line-height:2;color:var(--dim)}
+.field{display:flex;align-items:center;gap:var(--s4)}
+.label{flex:none;width:3rem;font-size:.75rem;color:var(--dim);font-weight:var(--w-quiet)}
+input[type=text]{
+  flex:1;min-width:0;background:none;border:0;border-bottom:1px solid var(--line-2);
+  padding:var(--s2) 0;color:var(--foam);font-family:var(--face);font-weight:var(--w-body);font-size:1.266rem;
+}
+input[type=text]::placeholder{color:rgba(207,202,240,.45);font-size:1rem}
+input[type=text]:focus{outline:0;border-bottom-color:var(--foam)}
+.err{min-height:1.2em;font-size:.8125rem;color:var(--miss);font-weight:var(--w-item)}
+
+/* ── waiting ── */
+.big-name{font-weight:var(--w-title);font-size:2.25rem;color:var(--bottle);word-break:break-all}
+.hint{font-size:.875rem;line-height:2;color:var(--dim)}
+.hint b{color:var(--foam);font-weight:var(--w-item)}
+.eq{display:flex;gap:6px;align-items:flex-end;height:36px}
+.eq i{width:6px;background:var(--foam);border-radius:3px;animation:eq 1s ease-in-out infinite}
+.eq i:nth-child(2){animation-delay:-.3s}.eq i:nth-child(3){animation-delay:-.6s}.eq i:nth-child(4){animation-delay:-.15s}.eq i:nth-child(5){animation-delay:-.45s}
+@keyframes eq{0%,100%{height:8px}50%{height:36px}}
+
+/* ── countdown ── */
+.cd-q{font-size:1rem;color:var(--dim);letter-spacing:.2em}
+.cd-n{font-weight:var(--w-title);font-size:7rem;line-height:1;color:var(--bottle);font-variant-numeric:tabular-nums}
+.cd-n.pop{animation:cdpop .5s var(--ease)}
+@keyframes cdpop{from{transform:scale(1.5);opacity:0}to{transform:none;opacity:1}}
+
+/* ── question ── */
+#s-q{height:100vh;height:100dvh;min-height:0;gap:var(--s4)}
+.hud{display:flex;justify-content:space-between;align-items:flex-end}
+.hud .q{font-size:.8125rem;color:var(--dim);padding-bottom:var(--s1)}
+.hud .clock{font-weight:var(--w-title);font-size:2.25rem;line-height:1;font-variant-numeric:tabular-nums;min-width:4.2ch;text-align:right}
+.hud .clock.hurry{color:var(--miss)}
+.grid{
+  flex:1;min-height:0;max-height:calc(min(100vw,30rem) * 1.5);margin-top:auto;
+  display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:var(--s2);
+}
+.grid .opt{font-size:1.125rem}
+.opt.sm{font-size:1rem !important}.opt.xs{font-size:.875rem !important;line-height:1.35}.opt.xxs{font-size:.8125rem !important;line-height:1.3}
+.opt:active{transform:scale(.96)}
+.opt.picked{background:var(--foam);color:var(--night);opacity:1}
+.qfoot{text-align:center;font-size:.875rem;color:var(--dim);min-height:1.5em}
+.qfoot b{color:var(--foam)}
+
+/* ── result ── */
+#s-res{justify-content:center;gap:var(--s5)}
+.verdict{font-weight:var(--w-title);font-size:2.6rem;line-height:1.2}
+.verdict.good{color:var(--bottle)}
+.verdict.bad{color:var(--miss)}
+.gain{font-size:1.266rem;font-weight:var(--w-strong);color:var(--bottle);font-variant-numeric:tabular-nums;margin-top:var(--s2)}
+.gain.zero{color:var(--dim);font-weight:var(--w-body);font-size:1rem}
+.song{margin-top:var(--s3);font-size:.875rem;color:var(--dim);line-height:1.8}
+.song b{color:var(--foam);font-weight:var(--w-item)}
+.card{padding:var(--s5);border-radius:var(--r-touch);background:rgba(23,26,51,.75);box-shadow:inset 0 0 0 1px var(--line)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4)}
+.stat .k{font-size:.75rem;color:var(--dim);letter-spacing:.1em}
+.stat .v{font-weight:var(--w-title);font-size:2.25rem;line-height:1.15;font-variant-numeric:tabular-nums}
+.stat .v small{font-size:.875rem;font-weight:var(--w-body);color:var(--dim);margin-left:2px}
+.stat.hot .v{color:var(--bottle)}
+.chase{margin-top:var(--s4);padding-top:var(--s4);border-top:1px solid var(--line);font-size:.9375rem;line-height:1.8;color:var(--dim)}
+.chase b{color:var(--bottle);font-weight:var(--w-strong)}
+.chase .nm{color:var(--foam);font-weight:var(--w-item)}
+.after{text-align:center;font-size:.8125rem;color:var(--dim)}
+
+/* ── final ── */
+.final-rank{font-weight:var(--w-title);font-size:5rem;line-height:1;color:var(--bottle);font-variant-numeric:tabular-nums}
+.final-rank small{font-size:1.5rem;margin-left:4px}
+.final-title{font-weight:var(--w-title);font-size:1.688rem}
+
+/* ── connection banner ── */
+.net{
+  position:fixed;left:0;right:0;top:0;z-index:50;padding:calc(env(safe-area-inset-top) + 6px) var(--s4) 6px;
+  background:var(--miss);color:var(--night);text-align:center;font-size:.8125rem;font-weight:var(--w-strong);
+}
+</style>
+</head>
+<body>
+
+<div class="net" id="net" hidden>連線中斷,重新連線中⋯</div>
+
+<!-- connecting -->
+<div class="screen center" id="s-boot">
+  <div class="spin"></div>
+  <div class="hint">連線中⋯</div>
+</div>
+
+<!-- join -->
+<div class="screen" id="s-join" hidden>
+  <div class="brand">
+    <div class="eyebrow">台大流唱社</div>
+    <h1>金曲猜歌王<span class="live">LIVE</span></h1>
+    <div class="slogan">聽大螢幕放的歌,在手機上九選一<br>答得越快,分數越高</div>
+  </div>
+  <div class="rule"></div>
+  <form id="join-form" autocomplete="off">
+    <div class="field">
+      <label class="label" for="nick">暱稱</label>
+      <input type="text" id="nick" maxlength="8" placeholder="最多 8 個字,會出現在大螢幕上" enterkeyhint="go">
+    </div>
+    <div class="err" id="join-err"></div>
+    <button class="btn" id="btn-join" type="submit">加入遊戲</button>
+  </form>
+</div>
+
+<!-- lobby -->
+<div class="screen center" id="s-wait" hidden>
+  <div class="eyebrow">你已加入</div>
+  <div class="big-name" id="w-name"></div>
+  <div class="eq"><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="hint">看看大螢幕上有沒有你的名字<br><b>等主持人開始</b></div>
+</div>
+
+<!-- countdown -->
+<div class="screen center" id="s-cd" hidden>
+  <div class="cd-q" id="cd-q">第 1 題</div>
+  <div class="cd-n" id="cd-n">3</div>
+  <div class="hint">仔細聽 —— 歌一出來就搶答</div>
+</div>
+
+<!-- question -->
+<div class="screen" id="s-q" hidden>
+  <div class="hud">
+    <span class="q" id="q-num"></span>
+    <span class="clock" id="q-clock">12.0</span>
+  </div>
+  <div class="bar"><i id="q-bar"></i></div>
+  <div class="grid" id="q-grid"></div>
+  <div class="qfoot" id="q-foot">聽大螢幕,選出這首歌</div>
+</div>
+
+<!-- result (reveal + board) -->
+<div class="screen" id="s-res" hidden>
+  <div>
+    <div class="verdict" id="r-verdict"></div>
+    <div class="gain" id="r-gain"></div>
+    <div class="song" id="r-song"></div>
+  </div>
+  <div class="card">
+    <div class="stats">
+      <div class="stat hot"><div class="k">目前總分</div><div class="v" id="r-score">0</div></div>
+      <div class="stat"><div class="k">目前排名</div><div class="v" id="r-rank"></div></div>
+    </div>
+    <div class="chase" id="r-chase"></div>
+  </div>
+  <div class="after" id="r-after">下一題馬上開始</div>
+</div>
+
+<!-- podium -->
+<div class="screen center" id="s-podium" hidden>
+  <div class="eyebrow">全部題目結束</div>
+  <div class="final-title">頒獎典禮</div>
+  <div class="eq"><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="hint">看大螢幕,前三名即將揭曉<br><b>你的最終名次等等就會出現在這裡</b></div>
+</div>
+
+<!-- final -->
+<div class="screen center" id="s-final" hidden>
+  <div class="eyebrow" id="f-name"></div>
+  <div class="final-title" id="f-title"></div>
+  <div class="final-rank" id="f-rank"></div>
+  <div class="card" style="width:100%;text-align:left">
+    <div class="stats">
+      <div class="stat hot"><div class="k">最終分數</div><div class="v" id="f-score">0</div></div>
+      <div class="stat"><div class="k">答對題數</div><div class="v" id="f-correct"></div></div>
+    </div>
+    <div class="chase" id="f-chase"></div>
+  </div>
+  <div class="hint">謝謝參加!<br>喜歡猜歌?歡迎追蹤 IG <b>@ntupm__18th</b></div>
+</div>
+
+<!-- kicked / reset -->
+<div class="screen center" id="s-msg" hidden>
+  <div class="final-title" id="m-title"></div>
+  <div class="hint" id="m-text"></div>
+  <button class="btn ghost" id="btn-rejoin" style="max-width:14rem">重新加入</button>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const SCREENS = ['s-boot','s-join','s-wait','s-cd','s-q','s-res','s-podium','s-final','s-msg'];
+function show(id){
+  SCREENS.forEach(s => $(s).hidden = s !== id);
+  document.body.classList.toggle('dim', id !== 's-join');
+}
+const fmt = n => Number(n || 0).toLocaleString();
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* The seat on this phone survives reloads, locked screens and dropped
+   connections — at a 200-person event a lot of phones sleep mid-game. */
+const SEAT_KEY = 'pmsg_live_seat_v1';
+let seat = null;
+try{ seat = JSON.parse(localStorage.getItem(SEAT_KEY)); }catch(e){}
+const saveSeat = s => { seat = s; try{ s ? localStorage.setItem(SEAT_KEY, JSON.stringify(s)) : localStorage.removeItem(SEAT_KEY); }catch(e){} };
+
+/* ═══════════ connection ═══════════ */
+let ws = null, retry = 0, everConnected = false, stopped = false;
+
+function connect(){
+  if(stopped) return;
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+  ws.onopen = () => {
+    retry = 0; everConnected = true;
+    $('net').hidden = true;
+    if(seat) send({ t: 'resume', pid: seat.pid, token: seat.token });
+    else showJoin();
+  };
+  ws.onmessage = e => { let m; try{ m = JSON.parse(e.data); }catch(_){ return; } onMessage(m); };
+  ws.onclose = () => {
+    if(stopped) return;
+    if(everConnected) $('net').hidden = false;
+    setTimeout(connect, Math.min(4000, 400 * 2 ** retry++) + Math.random() * 400);
+  };
+}
+function send(m){ if(ws && ws.readyState === 1) ws.send(JSON.stringify(m)); }
+
+// a phone waking up should not wait out the backoff
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible'){
+    if(!ws || ws.readyState > 1){ retry = 0; connect(); }
+    requestWakeLock();
+  }
+});
+
+let wakeLock = null;
+async function requestWakeLock(){
+  try{ if('wakeLock' in navigator && !wakeLock){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => wakeLock = null); } }catch(e){}
+}
+
+/* ═══════════ join ═══════════ */
+function showJoin(){
+  show('s-join');
+  $('btn-join').disabled = false;
+  $('btn-join').textContent = '加入遊戲';
+}
+
+$('join-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('nick').value.trim();
+  if(!name){ $('join-err').textContent = '請輸入暱稱'; return; }
+  $('join-err').textContent = '';
+  $('btn-join').disabled = true;
+  $('btn-join').textContent = '加入中⋯';
+  requestWakeLock();
+  send({ t: 'join', name });
+});
+$('nick').addEventListener('input', () => { $('join-err').textContent = ''; });
+
+$('btn-rejoin').addEventListener('click', () => {
+  saveSeat(null); stopped = false; $('nick').value = '';
+  if(!ws || ws.readyState > 1) connect(); else showJoin();
+});
+
+/* ═══════════ state ═══════════ */
+let view = {};        // last state from the server
+let clock = null;     // { deadline, limit }
+let qShownAt = 0;     // performance.now() when the question state arrived
+let qRemaining = 0;
+
+function onMessage(m){
+  switch(m.t){
+    case 'joined': saveSeat({ pid: m.pid, token: m.token }); return;
+    case 'joinError':
+      $('join-err').textContent = m.msg;
+      $('btn-join').disabled = false; $('btn-join').textContent = '加入遊戲';
+      return;
+    case 'unknown':   // server restarted or the game was reset
+      saveSeat(null); return showJoin();
+    case 'kicked':
+      saveSeat(null);
+      $('m-title').textContent = '你被主持人移出遊戲了';
+      $('m-text').textContent = '可能是暱稱不太適合放在大螢幕上。換個暱稱再加入吧。';
+      return show('s-msg');
+    case 'reset':
+      saveSeat(null);
+      $('m-title').textContent = '遊戲已重置';
+      $('m-text').textContent = '主持人開了新的一場,重新加入就可以玩。';
+      return show('s-msg');
+    case 'state': return render(m);
+  }
+}
+
+function render(s){
+  const prev = view;
+  view = s;
+  if(s.phase !== 'question') stopClock();
+
+  switch(s.phase){
+    case 'lobby':
+      $('w-name').textContent = s.name;
+      return show('s-wait');
+
+    case 'countdown': {
+      $('cd-q').textContent = `第 ${s.qIndex + 1} 題 / 共 ${s.qTotal} 題`;
+      show('s-cd');
+      const end = performance.now() + s.remaining;
+      const step = () => {
+        if(view.phase !== 'countdown' || view.qIndex !== s.qIndex) return;
+        const n = Math.max(1, Math.ceil((end - performance.now()) / 1000));
+        const el = $('cd-n');
+        if(el.textContent !== String(n)){ el.textContent = n; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+        if(performance.now() < end) requestAnimationFrame(step);
+      };
+      $('cd-n').textContent = '';
+      step();
+      return;
+    }
+
+    case 'question': {
+      const fresh = prev.phase !== 'question' || prev.qIndex !== s.qIndex;
+      if(fresh){
+        qShownAt = performance.now();
+        qRemaining = s.remaining;
+        buildGrid(s);
+        startClock(s);
+      }
+      markPicked(s.choice);
+      return show('s-q');
+    }
+
+    case 'reveal':
+    case 'board':
+      renderResult(s);
+      return show('s-res');
+
+    case 'podium': return show('s-podium');
+    case 'final':  renderFinal(s); return show('s-final');
+  }
+}
+
+/* ═══════════ question ═══════════ */
+function sizeClass(label){
+  const cjk = /[㐀-鿿぀-ヿ가-힯]/.test(label);
+  const n = label.length;
+  if(cjk ? n >= 11 : n >= 20) return ' xxs';
+  if(cjk ? n >= 9  : n >= 14) return ' xs';
+  if(cjk ? n >= 6  : n >= 9)  return ' sm';
+  return '';
+}
+
+let myPick = null;   // local pick, shown before the server confirms it
+
+function buildGrid(s){
+  myPick = null;
+  $('q-num').textContent = `第 ${s.qIndex + 1} 題,共 ${s.qTotal} 題`;
+  $('q-foot').textContent = '聽大螢幕,選出這首歌';
+  const grid = $('q-grid');
+  grid.innerHTML = '';
+  s.options.forEach((label, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'opt' + sizeClass(label);
+    b.textContent = label;
+    b.addEventListener('click', () => pick(i));
+    grid.appendChild(b);
+  });
+}
+
+function pick(i){
+  if(view.phase !== 'question' || view.choice != null || myPick != null) return;
+  const left = clock ? clock.deadline - performance.now() : 0;
+  if(left <= 0) return;
+  myPick = i;
+  const elapsed = (view.timeLimit * 1000 - qRemaining) + (performance.now() - qShownAt);
+  send({ t: 'answer', q: view.qIndex, choice: i, elapsed: Math.round(elapsed) });
+  if(navigator.vibrate) try{ navigator.vibrate(30); }catch(e){}
+  markPicked(i);
+}
+
+function markPicked(choice){
+  const c = choice != null ? choice : myPick;
+  if(c == null) return;
+  [...$('q-grid').children].forEach((el, i) => {
+    el.classList.toggle('picked', i === c);
+    el.classList.toggle('fade', i !== c);
+  });
+  $('q-foot').innerHTML = '<b>已送出</b> · 等時間到就公布答案';
+  stopClock(true);
+}
+
+function startClock(s){
+  clock = { deadline: performance.now() + s.remaining, limit: s.timeLimit };
+  const tick = () => {
+    if(!clock) return;
+    const left = Math.max(0, (clock.deadline - performance.now()) / 1000);
+    $('q-clock').textContent = left.toFixed(1);
+    $('q-clock').classList.toggle('hurry', left <= 4);
+    $('q-bar').style.transform = `scaleX(${left / clock.limit})`;
+    $('q-bar').classList.toggle('hurry', left <= 4);
+    if(left <= 0){
+      if(view.choice == null && myPick == null){
+        [...$('q-grid').children].forEach(el => el.classList.add('fade'));
+        $('q-foot').textContent = '時間到!';
+      }
+      clock = null; return;
+    }
+    clock.raf = requestAnimationFrame(tick);
+  };
+  tick();
+}
+// once answered the clock freezes: it is no longer this player's problem
+function stopClock(freeze){
+  if(clock && clock.raf) cancelAnimationFrame(clock.raf);
+  if(!freeze) clock = null;
+  else if(clock) clock.raf = null, clock.frozen = true;
+}
+
+/* ═══════════ result ═══════════ */
+function chaseHtml(s){
+  if(s.total <= 1) return '目前只有你一個人在玩';
+  if(s.score === 0) return s.ahead ? `還沒拿到分數 —— 第 ${s.ahead.rank} 名 <span class="nm">${esc(s.ahead.name)}</span> 有 <b>${fmt(s.ahead.gap)}</b> 分,下一題追上去` : '大家都還沒拿到分數,下一題手要快';
+  if(s.rank === 1){
+    return s.lead > 0
+      ? `你是<b>第一名</b>!領先第二名 <b>${fmt(s.lead)}</b> 分`
+      : `你是<b>第一名</b>!但第二名跟你同分,你贏在答得比較快`;
+  }
+  const a = s.ahead;
+  if(a.gap === 0) return `跟第 ${a.rank} 名 <span class="nm">${esc(a.name)}</span> 同分,同分比速度,對方快了一點`;
+  return `距離第 ${a.rank} 名 <span class="nm">${esc(a.name)}</span> 還差 <b>${fmt(a.gap)}</b> 分`;
+}
+
+function renderResult(s){
+  const v = $('r-verdict'), g = $('r-gain');
+  if(s.correct){
+    v.textContent = '答對了!'; v.className = 'verdict good';
+    g.textContent = `+${fmt(s.gained)} 分`; g.className = 'gain';
+  }else{
+    v.textContent = s.choice == null ? '沒有作答' : '答錯了'; v.className = 'verdict bad';
+    g.textContent = '這題 +0 分'; g.className = 'gain zero';
+  }
+  $('r-song').innerHTML = `這首是 <b>${esc(s.artist)}</b> 的〈<b>${esc(s.title)}</b>〉`;
+  $('r-score').textContent = fmt(s.score);
+  $('r-rank').innerHTML = `${s.rank}<small>/ ${s.total}</small>`;
+  $('r-chase').innerHTML = chaseHtml(s);
+  $('r-after').textContent = s.last ? '這是最後一題 —— 頒獎典禮即將開始' : `第 ${s.qIndex + 1} / ${s.qTotal} 題 · 下一題馬上開始`;
+}
+
+function renderFinal(s){
+  $('f-name').textContent = s.name;
+  $('f-title').textContent = s.rank === 1 ? '🏆 金曲猜歌王' : s.rank <= 3 ? '登上頒獎台!' : '最終名次';
+  $('f-rank').innerHTML = `第 ${s.rank}<small>名</small>`;
+  $('f-score').textContent = fmt(s.score);
+  $('f-correct').innerHTML = `${s.correctCount}<small>/ ${s.qTotal}</small>`;
+  $('f-chase').innerHTML = `共 ${s.total} 人參加 · ` + (s.rank === 1
+    ? '沒有人比你更會猜歌'
+    : s.ahead.gap === 0 ? `跟第 ${s.ahead.rank} 名同分,輸在速度`
+    : `離第 ${s.ahead.rank} 名差 <b>${fmt(s.ahead.gap)}</b> 分`);
+}
+
+connect();
+</script>
+</body>
+</html>

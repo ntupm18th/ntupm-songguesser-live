@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>主持人 · 金曲猜歌王 現場版</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700;900&display=swap">
+<link rel="stylesheet" href="base.css">
+<style>
+/* Built for a projector: everything scales off one unit so a 1080p screen, a
+   laptop and a 4K TV all show the same layout. 1rem = 20px at 1920×1080. */
+html{font-size:min(1.0417vw, 1.852vh)}
+body{overflow:hidden;height:100vh}
+.stage{position:fixed;inset:0;display:flex;flex-direction:column;padding:2.4rem 3.2rem}
+.btn{font-size:1.3rem;padding:.9rem 1.6rem;width:auto}
+
+/* ── bottom control strip: operator only, kept quiet ── */
+.ctrl{
+  position:fixed;right:1.6rem;bottom:1.4rem;z-index:30;
+  display:flex;align-items:center;gap:1rem;
+}
+.ctrl .keys{font-size:.8rem;color:rgba(207,202,240,.4)}
+.ctrl .btn{min-width:12rem}
+.topright{position:fixed;top:1.2rem;right:1.6rem;z-index:30;display:flex;gap:1.2rem;align-items:center;font-size:.85rem;color:var(--dim)}
+.topright .vol{display:flex;align-items:center;gap:.5rem}
+.topright input[type=range]{width:8rem;accent-color:var(--foam)}
+.topright .dot{width:.6rem;height:.6rem;border-radius:50%;background:var(--miss);display:inline-block;margin-right:.4rem}
+.topright .dot.on{background:#7FD69A}
+
+/* ── lobby ── */
+#p-lobby{flex-direction:row;gap:3.2rem;align-items:stretch}
+.join{flex:none;width:34rem;display:flex;flex-direction:column;justify-content:center;gap:1.4rem}
+.join h1{margin:0;font-weight:var(--w-title);font-size:4.2rem;line-height:1.1;color:var(--bottle);letter-spacing:.04em}
+.join h1 small{display:block;font-size:1.3rem;color:var(--dim);letter-spacing:.3em;font-weight:var(--w-body);margin-bottom:.6rem}
+.qr{width:26rem;height:26rem;border-radius:1rem;background:var(--foam);padding:1rem}
+.qr svg{width:100%;height:100%;display:block}
+.join .url{font-size:1.5rem;font-weight:var(--w-strong);letter-spacing:.02em;word-break:break-all}
+.join .how{font-size:1.1rem;color:var(--dim);line-height:1.8}
+
+.roster{flex:1;min-width:0;display:flex;flex-direction:column;gap:1.2rem;padding-top:3rem}
+.count{display:flex;align-items:baseline;gap:1rem}
+.count b{font-weight:var(--w-title);font-size:6rem;line-height:1;color:var(--bottle);font-variant-numeric:tabular-nums}
+.count span{font-size:1.6rem;color:var(--dim)}
+.names{flex:1;min-height:0;overflow:hidden;display:flex;flex-wrap:wrap;align-content:flex-start;gap:.7rem}
+.names button{
+  padding:.5rem 1.1rem;border-radius:999px;background:var(--tide);font-size:1.3rem;font-weight:var(--w-item);
+  animation:namein .35s var(--ease) backwards;
+}
+.names button.off{opacity:.45}
+.names button.arm{background:var(--miss);color:var(--night)}
+.names .more{padding:.5rem 1.1rem;font-size:1.3rem;color:var(--dim)}
+@keyframes namein{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+.setup{display:flex;align-items:center;gap:1.6rem;flex-wrap:wrap;font-size:1rem;color:var(--dim);padding-bottom:4.5rem}
+.setup label{display:flex;align-items:center;gap:.5rem}
+.setup select{font-family:inherit;font-size:1rem;background:var(--deep);color:var(--foam);border:1px solid var(--line-2);border-radius:.4rem;padding:.3rem .5rem}
+.setup .clips b{color:var(--foam)}
+.setup .clips.ok b{color:var(--bottle)}
+.setup button.link{text-decoration:underline;text-underline-offset:3px;color:var(--dim)}
+
+/* ── countdown ── */
+#p-cd{align-items:center;justify-content:center;gap:2rem;text-align:center}
+#p-cd .q{font-size:2.2rem;color:var(--dim);letter-spacing:.3em}
+#p-cd .n{font-weight:var(--w-title);font-size:18rem;line-height:1;color:var(--bottle);font-variant-numeric:tabular-nums}
+#p-cd .n.pop{animation:cdpop .6s var(--ease)}
+@keyframes cdpop{from{transform:scale(1.6);opacity:0}to{transform:none;opacity:1}}
+#p-cd .sub{font-size:1.5rem;color:var(--dim)}
+
+/* ── question / reveal ── */
+#p-q{gap:1.4rem}
+.qhead{display:flex;align-items:center;gap:2rem}
+.qhead .q{font-size:1.6rem;color:var(--dim);letter-spacing:.1em}
+.qhead .eq{display:flex;gap:.35rem;align-items:flex-end;height:2rem}
+.qhead .eq i{width:.35rem;background:var(--bottle);border-radius:.2rem;animation:eq 1s ease-in-out infinite}
+.qhead .eq i:nth-child(2){animation-delay:-.3s}.qhead .eq i:nth-child(3){animation-delay:-.6s}.qhead .eq i:nth-child(4){animation-delay:-.15s}.qhead .eq i:nth-child(5){animation-delay:-.45s}
+.qhead .eq.stop i{animation:none;height:.4rem}
+@keyframes eq{0%,100%{height:.4rem}50%{height:2rem}}
+.qhead .spacer{flex:1}
+.qhead .ans{font-size:1.4rem;color:var(--dim)}
+.qhead .ans b{font-size:2.6rem;font-weight:var(--w-title);color:var(--foam);font-variant-numeric:tabular-nums;margin-right:.3rem}
+.qhead .clock{font-weight:var(--w-title);font-size:5rem;line-height:1;min-width:3.2ch;text-align:right;font-variant-numeric:tabular-nums}
+.qhead .clock.hurry{color:var(--miss)}
+.hgrid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:1rem}
+.hgrid .opt{font-size:2.1rem;padding:1rem;border-radius:1rem}
+.hgrid .opt.sm{font-size:1.9rem}.hgrid .opt.xs{font-size:1.6rem}.hgrid .opt.xxs{font-size:1.4rem}
+.hgrid .opt .n{
+  position:absolute;right:.8rem;bottom:.5rem;font-size:1.2rem;font-weight:var(--w-strong);
+  font-variant-numeric:tabular-nums;opacity:.85
+}
+.hgrid .opt .n:empty{display:none}
+.hgrid .opt.right{animation:glow 1.2s var(--ease)}
+@keyframes glow{0%{box-shadow:0 0 0 0 rgba(242,200,106,.8)}100%{box-shadow:0 0 0 1.4rem rgba(242,200,106,0)}}
+.reveal-bar{
+  display:flex;align-items:baseline;gap:1.6rem;min-height:5.4rem;padding-right:15rem;
+}
+.reveal-bar .ttl{font-weight:var(--w-title);font-size:3rem;color:var(--bottle)}
+.reveal-bar .art{font-size:1.8rem;color:var(--foam)}
+.reveal-bar .rate{margin-left:auto;font-size:1.4rem;color:var(--dim);white-space:nowrap}
+.reveal-bar .rate b{color:var(--foam);font-size:2rem}
+
+/* ── leaderboard ── */
+#p-board{gap:1.6rem;padding-left:12rem;padding-right:12rem}
+.bhead{display:flex;align-items:baseline;justify-content:space-between}
+.bhead h2{margin:0;font-weight:var(--w-title);font-size:3.2rem;color:var(--foam)}
+.bhead span{font-size:1.4rem;color:var(--dim)}
+.blist{flex:1;min-height:0;display:flex;flex-direction:column;gap:.5rem;padding-bottom:4rem}
+.brow{
+  flex:1;max-height:5.6rem;display:grid;grid-template-columns:4.5rem 2.6rem 1fr auto 9rem;align-items:center;gap:1.2rem;
+  padding:0 1.6rem;border-radius:.8rem;background:rgba(23,26,51,.8);box-shadow:inset 0 0 0 1px var(--line);
+  animation:rowin .45s var(--ease) backwards;
+}
+@keyframes rowin{from{opacity:0;transform:translateX(-2rem)}to{opacity:1;transform:none}}
+.brow .rk{font-weight:var(--w-title);font-size:2.2rem;color:var(--dim);font-variant-numeric:tabular-nums}
+.brow.top .rk{color:var(--bottle)}
+.brow:first-child{background:rgba(242,200,106,.14);box-shadow:inset 0 0 0 1px rgba(242,200,106,.5)}
+.brow .mv{font-size:1.2rem;font-weight:var(--w-strong);text-align:center}
+.brow .mv.up{color:#7FD69A}.brow .mv.down{color:var(--miss)}.brow .mv.same{color:rgba(207,202,240,.3)}
+.brow .nm{font-weight:var(--w-item);font-size:2rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .gd{font-size:1.3rem;color:var(--bottle);font-variant-numeric:tabular-nums}
+.brow .gd.zero{color:rgba(207,202,240,.3)}
+.brow .sc{font-weight:var(--w-title);font-size:2.2rem;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ── podium ── */
+#p-podium{align-items:center;gap:1rem}
+#p-podium h2{margin:1rem 0 0;font-weight:var(--w-title);font-size:3.6rem;color:var(--bottle);letter-spacing:.2em}
+#p-podium .sub{font-size:1.4rem;color:var(--dim);min-height:2rem}
+.podium{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:2rem;padding-bottom:5rem}
+.place{width:22rem;display:flex;flex-direction:column;align-items:center;gap:1rem}
+.place .who{
+  text-align:center;min-height:9rem;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:.4rem;
+  opacity:0;transform:translateY(2rem) scale(.9);transition:opacity .6s var(--ease),transform .6s var(--ease);
+}
+.place.shown .who{opacity:1;transform:none}
+.place .medal{font-size:4rem;line-height:1}
+.place .nm{font-weight:var(--w-title);font-size:2.6rem;line-height:1.2;max-width:22rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.place .sc{font-size:1.6rem;color:var(--bottle);font-variant-numeric:tabular-nums;font-weight:var(--w-strong)}
+.place .block{
+  width:100%;border-radius:1rem 1rem 0 0;background:linear-gradient(180deg,var(--tide),rgba(37,44,85,.4));
+  box-shadow:inset 0 1px 0 var(--line-2);display:flex;justify-content:center;padding-top:1.2rem;
+  font-weight:var(--w-title);font-size:5rem;color:var(--dim);
+}
+.place.p1 .block{height:24rem;background:linear-gradient(180deg,rgba(242,200,106,.55),rgba(242,200,106,.08));color:var(--night)}
+.place.p2 .block{height:17rem}
+.place.p3 .block{height:12rem}
+.place.p1 .nm{font-size:3.4rem;color:var(--bottle)}
+.place.p1.shown .who{animation:champ 1.2s var(--ease)}
+@keyframes champ{0%{transform:scale(.4)}60%{transform:scale(1.15)}100%{transform:none}}
+.place.drum .block{animation:shake .12s linear infinite}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-.2rem)}75%{transform:translateX(.2rem)}}
+.rest{display:flex;gap:1.2rem 2.4rem;flex-wrap:wrap;justify-content:center;font-size:1.3rem;color:var(--dim);position:absolute;bottom:1.9rem;left:4rem;right:30rem}
+.rest b{color:var(--foam);font-weight:var(--w-item)}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:20}
+
+/* ── overlays ── */
+.overlay{
+  position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.6rem;
+  background:rgba(11,12,24,.92);text-align:center;
+}
+.overlay h2{margin:0;font-weight:var(--w-title);font-size:3rem;color:var(--bottle)}
+.overlay p{margin:0;font-size:1.3rem;color:var(--dim);line-height:1.8;max-width:44rem}
+.overlay input{font-family:inherit;font-size:1.4rem;padding:.6rem 1rem;border-radius:.5rem;border:1px solid var(--line-2);background:var(--deep);color:var(--foam);text-align:center}
+</style>
+</head>
+<body class="dim">
+
+<canvas id="confetti"></canvas>
+
+<div class="topright">
+  <span id="conn"><span class="dot"></span>未連線</span>
+  <span id="online"></span>
+  <label class="vol">🔊 <input type="range" id="vol" min="0" max="100" value="90"></label>
+</div>
+
+<!-- ═══ lobby ═══ -->
+<div class="stage" id="p-lobby" hidden>
+  <div class="join">
+    <h1><small>台大流唱社</small>金曲猜歌王</h1>
+    <div class="qr" id="qr"></div>
+    <div class="url" id="join-url"></div>
+    <div class="how">手機掃 QR code,輸入暱稱就能加入<br>歌從這台電腦播,答案在手機上選</div>
+  </div>
+  <div class="roster">
+    <div class="count"><b id="l-count">0</b><span>人已加入</span></div>
+    <div class="names" id="l-names"></div>
+    <div class="setup">
+      <label>題數 <select id="set-n"></select></label>
+      <label>每題秒數 <select id="set-t"></select></label>
+      <span class="clips" id="clips">音樂準備中⋯</span>
+      <button class="link" id="btn-test">試播音樂</button>
+      <button class="link" id="btn-reset">清空所有玩家</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ countdown ═══ -->
+<div class="stage" id="p-cd" hidden>
+  <div class="q" id="cd-q"></div>
+  <div class="n" id="cd-n"></div>
+  <div class="sub">準備好手機 —— 歌一出來就搶答</div>
+</div>
+
+<!-- ═══ question + reveal ═══ -->
+<div class="stage" id="p-q" hidden>
+  <div class="qhead">
+    <div class="q" id="q-num"></div>
+    <div class="eq" id="q-eq"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="spacer"></div>
+    <div class="ans" id="q-ans"></div>
+    <div class="clock" id="q-clock"></div>
+  </div>
+  <div class="bar"><i id="q-bar"></i></div>
+  <div class="hgrid grid" id="q-grid"></div>
+  <div class="reveal-bar" id="q-reveal"></div>
+</div>
+
+<!-- ═══ leaderboard ═══ -->
+<div class="stage" id="p-board" hidden>
+  <div class="bhead">
+    <h2>排行榜</h2>
+    <span id="b-sub"></span>
+  </div>
+  <div class="blist" id="b-list"></div>
+</div>
+
+<!-- ═══ podium ═══ -->
+<div class="stage" id="p-podium" hidden>
+  <h2>頒獎典禮</h2>
+  <div class="sub" id="pd-sub"></div>
+  <div class="podium">
+    <div class="place p2" id="pl-2"><div class="who"></div><div class="block">2</div></div>
+    <div class="place p1" id="pl-1"><div class="who"></div><div class="block">1</div></div>
+    <div class="place p3" id="pl-3"><div class="who"></div><div class="block">3</div></div>
+  </div>
+  <div class="rest" id="pd-rest"></div>
+</div>
+
+<div class="ctrl">
+  <span class="keys">空白鍵 / → 下一步</span>
+  <button class="btn ghost" id="btn-alt" hidden></button>
+  <button class="btn" id="btn-next" hidden></button>
+</div>
+
+<!-- first click: browsers will not play audio until the page has been clicked -->
+<div class="overlay" id="ov-start">
+  <h2>金曲猜歌王 · 主持人</h2>
+  <p>這台電腦負責播歌,請接上喇叭。<br>點下面的按鈕啟用聲音。</p>
+  <button class="btn" id="btn-unlock">進入主持人畫面</button>
+</div>
+<div class="overlay" id="ov-key" hidden>
+  <h2>需要主持人密碼</h2>
+  <p>啟動伺服器時,終端機會印出主持人網址(包含 key)。<br>直接開那個網址,或在這裡輸入 key。</p>
+  <input id="key-input" placeholder="key" autocomplete="off">
+  <button class="btn" id="btn-key">確定</button>
+</div>
+<div class="overlay" id="ov-replaced" hidden>
+  <h2>主持人畫面已在別處開啟</h2>
+  <p>同一時間只能有一個主持人畫面。要在這裡繼續主持,按下面的按鈕。</p>
+  <button class="btn" id="btn-takeover">在這台繼續主持</button>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Number(n || 0).toLocaleString();
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const PANELS = ['p-lobby','p-cd','p-q','p-board','p-podium'];
+const showPanel = id => PANELS.forEach(p => $(p).hidden = p !== id);
+
+/* ═══════════ host key ═══════════ */
+const KEY_STORE = 'pmsg_live_hostkey';
+let hostKey = new URLSearchParams(location.search).get('key');
+try{
+  if(hostKey) localStorage.setItem(KEY_STORE, hostKey);
+  else hostKey = localStorage.getItem(KEY_STORE);
+}catch(e){}
+if(new URLSearchParams(location.search).has('key')) history.replaceState(null, '', location.pathname);  // keep the key off the projector
+
+/* ═══════════ sound ═══════════ */
+let volume = 0.9;
+try{ const v = parseFloat(localStorage.getItem('pmsg_live_vol')); if(v >= 0 && v <= 1) volume = v; }catch(e){}
+$('vol').value = Math.round(volume * 100);
+$('vol').addEventListener('input', e => {
+  volume = e.target.value / 100;
+  try{ localStorage.setItem('pmsg_live_vol', volume); }catch(_){}
+  if(current && !current.fading) current.gain.gain.setTargetAtTime(volume, actx().currentTime, 0.02);
+});
+
+let ctx = null;
+function actx(){
+  if(!ctx){ const AC = window.AudioContext || window.webkitAudioContext; if(AC) ctx = new AC(); }
+  if(ctx && ctx.state === 'suspended') ctx.resume();
+  return ctx;
+}
+function tone(freq, at, dur, type, peak){
+  const c = actx(); if(!c) return;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = type || 'triangle'; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(peak * volume + 0.0001, at + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  o.connect(g); g.connect(c.destination); o.start(at); o.stop(at + dur + 0.05);
+}
+const SFX = {
+  tick(hi){ const c = actx(); if(c) tone(hi ? 1320 : 880, c.currentTime + 0.01, 0.12, 'sine', 0.25); },
+  reveal(){ const c = actx(); if(!c) return; const t = c.currentTime + 0.02;
+    [523, 659, 784].forEach((f, i) => tone(f, t + i * 0.08, 0.5, 'triangle', 0.2)); },
+  drum(seconds){
+    const c = actx(); if(!c) return;
+    const len = Math.floor(c.sampleRate * 0.06);
+    const buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    for(let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const t0 = c.currentTime + 0.02;
+    for(let t = 0; t < seconds; ){
+      const src = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter();
+      f.type = 'lowpass'; f.frequency.value = 900;
+      g.gain.value = (0.25 + 0.55 * t / seconds) * volume;
+      src.buffer = buf; src.connect(f); f.connect(g); g.connect(c.destination);
+      src.start(t0 + t);
+      t += Math.max(0.045, 0.16 - 0.11 * t / seconds);
+    }
+  },
+  fanfare(big){
+    const c = actx(); if(!c) return; const t = c.currentTime + 0.02;
+    const seq = big ? [[523,0],[659,.12],[784,.24],[1047,.36],[784,.6],[1047,.72]] : [[392,0],[523,.12],[659,.24]];
+    seq.forEach(([f, dt]) => { tone(f, t + dt, big ? 0.9 : 0.6, 'triangle', 0.25); tone(f / 2, t + dt, 0.9, 'sine', 0.12); });
+  }
+};
+
+/* ═══════════ clips ═══════════
+   Every clip is downloaded and decoded before the game starts, so nothing
+   buffers on stage and a clip starts on the exact frame the question does.
+
+   fetch() + Web Audio rather than <audio>: Chrome defers media elements in
+   background tabs, so an operator who switched windows during setup would
+   find clips that never loaded. Apple's preview CDN sends
+   Access-Control-Allow-Origin: *, so the bytes are readable.
+
+   Memory: a decoded 30s clip is ~10MB, so only the compressed bytes (~1MB)
+   are kept for every question; the current one is decoded during its
+   countdown and dropped afterwards.
+
+   A clip that really will not download or decode is swapped for another song
+   by the server, so a dead link never surfaces live. */
+const clips = new Map();     // song id -> { state: 'loading'|'ok'|'fail', bytes, buffer, decoding }
+let loadQueue = Promise.resolve();
+
+async function download(url){
+  for(let attempt = 0; attempt < 3; attempt++){
+    try{
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 20000);
+      const r = await fetch(url, { signal: ctl.signal });
+      const buf = r.ok ? await r.arrayBuffer() : null;
+      clearTimeout(timer);
+      if(buf && buf.byteLength > 10000) return buf;
+      if(r.status === 404 || r.status === 403) return null;   // gone for good
+    }catch(e){}
+    await new Promise(res => setTimeout(res, 1000 * (attempt + 1)));
+  }
+  return null;
+}
+
+function decode(bytes){
+  const c = actx();
+  if(!c) return Promise.resolve(null);
+  // decodeAudioData detaches its input, so hand it a copy
+  return new Promise(res => c.decodeAudioData(bytes.slice(0), res, () => res(null)));
+}
+
+function getBuffer(entry){
+  if(entry.buffer) return Promise.resolve(entry.buffer);
+  if(!entry.decoding) entry.decoding = decode(entry.bytes).then(b => (entry.buffer = b));
+  return entry.decoding;
+}
+
+// keep decoded audio only for the question on stage
+function keepDecoded(id){
+  for(const [k, e] of clips) if(k !== id){ e.buffer = null; e.decoding = null; }
+}
+
+function syncClips(questions, fromIndex){
+  const wanted = new Set(questions.map(q => q.id));
+  for(const id of clips.keys()) if(!wanted.has(id)) clips.delete(id);
+  questions.forEach((q, i) => {
+    if(clips.has(q.id)) return;
+    const entry = { state: 'loading' };
+    clips.set(q.id, entry);
+    loadQueue = loadQueue.then(async () => {
+      if(clips.get(q.id) !== entry) return;   // replaced while queued
+      const bytes = await download(q.url);
+      const ok = bytes && await decode(bytes);   // proves the browser can actually play it
+      if(clips.get(q.id) !== entry) return;
+      if(ok){ entry.bytes = bytes; entry.state = 'ok'; }
+      else{
+        entry.state = 'fail';
+        if(i > S.index) send({ t: 'reroll', index: i, id: q.id });
+      }
+      renderClipStatus();
+    });
+  });
+  renderClipStatus();
+}
+
+function clipStats(){
+  const qs = S.questions || [];
+  const st = qs.map(q => (clips.get(q.id) || {}).state);
+  return { ok: st.filter(s => s === 'ok').length, total: qs.length };
+}
+function renderClipStatus(){
+  if(S.phase !== 'lobby') return;
+  const { ok, total } = clipStats();
+  $('clips').className = 'clips' + (ok === total ? ' ok' : '');
+  $('clips').innerHTML = ok === total ? `音樂 <b>${total}/${total}</b> 首已就緒` : `音樂準備中 <b>${ok}/${total}</b>`;
+  renderControls();
+}
+
+let current = null;   // { id, src, gain, fading }
+let playToken = null;
+
+async function playQuestionClip(q, elapsedMs){
+  stopClip(true);
+  const entry = clips.get(q.id);
+  if(!entry || entry.state !== 'ok') return;
+  const token = playToken = {};
+  const t0 = performance.now();
+  const buf = await getBuffer(entry);
+  if(playToken !== token || !buf) return;
+
+  const c = actx();
+  const gain = c.createGain();
+  gain.gain.value = volume;
+  gain.connect(c.destination);
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  src.connect(gain);
+  // if decoding ate into the clock, skip ahead so the clip stays in step with the phones
+  const lag = (elapsedMs || 0) + (performance.now() - t0);
+  src.start(0, Math.min(buf.duration - 0.5, (q.offset || 0) + lag / 1000));
+  current = { id: q.id, src, gain, fading: false };
+
+  // no click on this page yet: the context stays suspended and nothing is heard
+  setTimeout(() => { if(current && current.src === src && c.state !== 'running') showUnlock(); }, 400);
+}
+
+function stopClip(now){
+  playToken = null;
+  if(!current) return;
+  const cur = current; current = null;
+  const c = actx();
+  try{
+    if(now){ cur.src.stop(); return; }
+    cur.fading = true;
+    cur.gain.gain.cancelScheduledValues(c.currentTime);
+    cur.gain.gain.setValueAtTime(cur.gain.gain.value, c.currentTime);
+    cur.gain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2);
+    cur.src.stop(c.currentTime + 1.3);
+  }catch(e){}
+}
+
+let testTimer = null;
+$('btn-test').addEventListener('click', () => {
+  actx();
+  const q = (S.questions || []).find(q => (clips.get(q.id) || {}).state === 'ok');
+  if(!q) return;
+  clearTimeout(testTimer);
+  if(current){ stopClip(true); return; }
+  playQuestionClip(q);
+  testTimer = setTimeout(() => { if(S.phase === 'lobby'){ stopClip(); keepDecoded(null); } }, 6000);
+});
+
+/* ═══════════ connection ═══════════ */
+let ws = null, retry = 0, replaced = false;
+let S = { phase: null };
+
+function connect(){
+  if(replaced) return;
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+  ws.onopen = () => {
+    retry = 0;
+    $('conn').innerHTML = '<span class="dot on"></span>已連線';
+    if(!hostKey){ $('ov-key').hidden = false; return; }
+    send({ t: 'host', key: hostKey });
+  };
+  ws.onmessage = e => { let m; try{ m = JSON.parse(e.data); }catch(_){ return; } onMessage(m); };
+  ws.onclose = () => {
+    $('conn').innerHTML = '<span class="dot"></span>連線中斷,重連中⋯';
+    if(!replaced) setTimeout(connect, Math.min(3000, 300 * 2 ** retry++));
+  };
+}
+function send(m){ if(ws && ws.readyState === 1) ws.send(JSON.stringify(m)); }
+
+function onMessage(m){
+  if(m.t === 'denied'){ try{ localStorage.removeItem(KEY_STORE); }catch(e){} hostKey = null; $('ov-key').hidden = false; return; }
+  if(m.t === 'replaced'){ replaced = true; stopClip(true); $('ov-replaced').hidden = false; return; }
+  if(m.t === 'state'){ $('ov-key').hidden = true; render(m); }
+}
+
+$('btn-key').addEventListener('click', () => {
+  hostKey = $('key-input').value.trim();
+  try{ localStorage.setItem(KEY_STORE, hostKey); }catch(e){}
+  send({ t: 'host', key: hostKey });
+});
+$('btn-takeover').addEventListener('click', () => { replaced = false; $('ov-replaced').hidden = true; connect(); });
+$('btn-unlock').addEventListener('click', () => {
+  actx();
+  $('ov-start').hidden = true;
+  // a clip scheduled before the page was clicked just resumes with the context
+});
+function showUnlock(){
+  $('ov-start').hidden = false;
+  $('btn-unlock').textContent = '點一下恢復聲音';
+}
+
+/* ═══════════ render ═══════════ */
+function render(s){
+  const prev = S;
+  S = s;
+  $('online').textContent = s.playerCount ? `玩家 ${s.online}/${s.playerCount} 在線` : '';
+  syncClips(s.questions, s.phase === 'lobby' ? -1 : s.index);
+  // decode the upcoming clip during its countdown, so it starts on time
+  if(s.phase === 'countdown' || s.phase === 'question'){
+    const q = s.questions[s.index], entry = clips.get(q.id);
+    keepDecoded(q.id);
+    if(entry && entry.state === 'ok') getBuffer(entry);
+  }
+
+  const changed = prev.phase !== s.phase || prev.index !== s.index;
+  switch(s.phase){
+    case 'lobby':    renderLobby(s, prev); break;
+    case 'countdown':if(changed) renderCountdown(s); break;
+    case 'question': renderQuestion(s, changed); break;
+    case 'reveal':   renderReveal(s, changed); break;
+    case 'board':    if(changed) renderBoard(s); break;
+    case 'podium':
+    case 'final':    renderPodium(s, prev); break;
+  }
+  if(s.phase !== 'question' && s.phase !== 'reveal' && current && !current.fading && s.phase !== 'lobby') stopClip();
+  if(s.phase === 'lobby' && prev.phase && prev.phase !== 'lobby') stopClip(true);
+  renderControls();
+}
+
+/* ── lobby ── */
+let joinInfoLoaded = false;
+async function loadJoinInfo(){
+  if(joinInfoLoaded) return;
+  try{
+    const r = await fetch('/join-info', { cache: 'no-store' });
+    const j = await r.json();
+    $('qr').innerHTML = j.svg;
+    $('join-url').textContent = j.url.replace(/\/$/, '');
+    joinInfoLoaded = true;
+  }catch(e){ setTimeout(() => { joinInfoLoaded = false; loadJoinInfo(); }, 2000); }
+}
+
+let armedKick = null;
+function renderLobby(s, prev){
+  showPanel('p-lobby');
+  loadJoinInfo();
+  $('l-count').textContent = s.playerCount;
+
+  const box = $('l-names');
+  const known = new Set([...box.querySelectorAll('button')].map(b => b.dataset.pid));
+  const MAX = 120;   // the rest collapse into "+N"
+  box.innerHTML = '';
+  s.players.slice(0, MAX).forEach(p => {
+    const b = document.createElement('button');
+    b.dataset.pid = p.pid;
+    b.textContent = p.name;
+    b.title = '點兩下把這個人移出';
+    if(!p.online) b.classList.add('off');
+    if(armedKick === p.pid) b.classList.add('arm');
+    if(known.has(p.pid) || prev.phase !== 'lobby') b.style.animation = 'none';
+    b.addEventListener('click', () => {
+      if(armedKick === p.pid){ send({ t: 'kick', pid: p.pid }); armedKick = null; return; }
+      armedKick = p.pid;
+      box.querySelectorAll('button').forEach(x => x.classList.toggle('arm', x.dataset.pid === p.pid));
+      setTimeout(() => { if(armedKick === p.pid){ armedKick = null; b.classList.remove('arm'); } }, 3000);
+    });
+    box.appendChild(b);
+  });
+  if(s.players.length > MAX){
+    const more = document.createElement('span');
+    more.className = 'more'; more.textContent = `+${s.players.length - MAX} 人`;
+    box.appendChild(more);
+  }
+
+  fillSelect($('set-n'), [5, 8, 10, 12, 15, 20], s.rules.questionCount, n => `${n} 題`);
+  fillSelect($('set-t'), [8, 10, 12, 15, 20], s.rules.timeLimit, n => `${n} 秒`);
+  renderClipStatus();
+}
+function fillSelect(sel, values, cur, label){
+  if(!values.includes(cur)) values = values.concat(cur).sort((a, b) => a - b);
+  const html = values.map(v => `<option value="${v}"${v === cur ? ' selected' : ''}>${label(v)}</option>`).join('');
+  if(sel.dataset.html !== html){ sel.innerHTML = html; sel.dataset.html = html; }
+}
+const sendRules = () => send({ t: 'rules', questionCount: +$('set-n').value, timeLimit: +$('set-t').value });
+$('set-n').addEventListener('change', sendRules);
+$('set-t').addEventListener('change', sendRules);
+let resetArmed = false;
+$('btn-reset').addEventListener('click', () => {
+  if(!resetArmed){
+    resetArmed = true; $('btn-reset').textContent = '再按一次確定清空';
+    setTimeout(() => { resetArmed = false; $('btn-reset').textContent = '清空所有玩家'; }, 3000);
+    return;
+  }
+  resetArmed = false; $('btn-reset').textContent = '清空所有玩家';
+  send({ t: 'reset' });
+});
+
+/* ── countdown ── */
+function renderCountdown(s){
+  showPanel('p-cd');
+  $('cd-q').textContent = `第 ${s.index + 1} 題 / 共 ${s.questions.length} 題`;
+  const end = performance.now() + s.remaining;
+  let last = null;
+  const step = () => {
+    if(S.phase !== 'countdown' || S.index !== s.index) return;
+    const n = Math.max(1, Math.ceil((end - performance.now()) / 1000));
+    if(n !== last){
+      last = n;
+      const el = $('cd-n');
+      el.textContent = n; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+      SFX.tick(false);
+    }
+    if(performance.now() < end) requestAnimationFrame(step);
+  };
+  step();
+}
+
+/* ── question ── */
+function sizeClass(label){
+  const cjk = /[㐀-鿿぀-ヿ가-힯]/.test(label);
+  const n = label.length;
+  if(cjk ? n >= 11 : n >= 22) return ' xxs';
+  if(cjk ? n >= 9  : n >= 16) return ' xs';
+  if(cjk ? n >= 6  : n >= 11) return ' sm';
+  return '';
+}
+function buildGrid(q){
+  const g = $('q-grid');
+  g.innerHTML = '';
+  q.options.forEach(label => {
+    const d = document.createElement('div');
+    d.className = 'opt' + sizeClass(label);
+    d.innerHTML = `<span>${esc(label)}</span><span class="n"></span>`;
+    g.appendChild(d);
+  });
+}
+
+let hostClock = null;
+function renderQuestion(s, changed){
+  const q = s.questions[s.index];
+  if(changed){
+    showPanel('p-q');
+    $('q-num').textContent = `第 ${s.index + 1} 題 / 共 ${s.questions.length} 題`;
+    $('q-eq').classList.remove('stop');
+    $('q-reveal').innerHTML = '';
+    $('q-clock').hidden = false;
+    buildGrid(q);
+    playQuestionClip(q, s.elapsed);
+    const deadline = performance.now() + s.remaining;
+    cancelAnimationFrame(hostClock);
+    let lastSec = null;
+    const tick = () => {
+      if(S.phase !== 'question' || S.index !== s.index) return;
+      const left = Math.max(0, (deadline - performance.now()) / 1000);
+      $('q-clock').textContent = Math.ceil(left);
+      $('q-clock').classList.toggle('hurry', left <= 4);
+      $('q-bar').style.transform = `scaleX(${left / s.rules.timeLimit})`;
+      $('q-bar').classList.toggle('hurry', left <= 4);
+      const sec = Math.ceil(left);
+      if(sec !== lastSec && sec <= 3 && sec > 0) SFX.tick(true);
+      lastSec = sec;
+      hostClock = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+  $('q-ans').innerHTML = `<b>${fmt(s.answered)}</b>/ ${fmt(s.online)} 人已作答`;
+}
+
+function renderReveal(s, changed){
+  const q = s.questions[s.index];
+  if(changed){
+    if(!$('q-grid').children.length || $('p-q').hidden){
+      showPanel('p-q');
+      $('q-num').textContent = `第 ${s.index + 1} 題 / 共 ${s.questions.length} 題`;
+      buildGrid(q);
+    }
+    SFX.reveal();
+  }
+  cancelAnimationFrame(hostClock);
+  $('q-clock').hidden = true;
+  $('q-bar').style.transform = 'scaleX(0)';
+  $('q-eq').classList.add('stop');
+  [...$('q-grid').children].forEach((el, i) => {
+    el.classList.toggle('right', i === q.answer);
+    el.classList.toggle('fade', i !== q.answer);
+    el.querySelector('.n').textContent = s.counts[i] ? `${s.counts[i]} 人` : '';
+  });
+  $('q-ans').innerHTML = '';
+  const rate = s.answered ? Math.round(s.right / s.answered * 100) : 0;
+  $('q-reveal').innerHTML =
+    `<span class="ttl">${esc(q.title)}</span><span class="art">${esc(q.artist)}</span>` +
+    `<span class="rate">答對 <b>${fmt(s.right)}</b> 人 · 答對率 ${rate}%</span>`;
+}
+
+/* ── leaderboard ── */
+function renderBoard(s){
+  showPanel('p-board');
+  $('b-sub').textContent = `第 ${s.index + 1} / ${s.questions.length} 題之後 · 共 ${s.playerCount} 人`;
+  $('b-list').innerHTML = s.board.map((r, i) => {
+    let mv = '<span class="mv same">–</span>';
+    if(r.prevRank && r.prevRank > r.rank) mv = `<span class="mv up">▲${r.prevRank - r.rank}</span>`;
+    else if(r.prevRank && r.prevRank < r.rank) mv = `<span class="mv down">▼${r.rank - r.prevRank}</span>`;
+    return `<div class="brow${r.rank <= 3 ? ' top' : ''}" style="animation-delay:${(s.board.length - 1 - i) * 70}ms">
+      <span class="rk">${r.rank}</span>${mv}
+      <span class="nm">${esc(r.name)}</span>
+      <span class="gd${r.gained ? '' : ' zero'}">${r.gained ? '+' + fmt(r.gained) : '+0'}</span>
+      <span class="sc">${fmt(r.score)}</span></div>`;
+  }).join('') || '<div class="brow"><span></span><span></span><span class="nm">還沒有人</span></div>';
+}
+
+/* ── podium ── */
+const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
+function podiumOrder(n){ return [3, 2, 1].filter(r => r <= n); }   // reveal order
+
+function renderPodium(s, prev){
+  showPanel('p-podium');
+  const order = podiumOrder(s.board.length);
+  const revealed = new Set(order.slice(0, s.podiumStep));
+  if(s.phase === 'final') order.forEach(r => revealed.add(r));
+
+  [1, 2, 3].forEach(rank => {
+    const el = $('pl-' + rank);
+    const row = s.board[rank - 1];
+    el.hidden = !row;
+    if(!row) return;
+    el.classList.remove('drum');
+    el.querySelector('.who').innerHTML = revealed.has(rank)
+      ? `<div class="medal">${MEDAL[rank]}</div><div class="nm">${esc(row.name)}</div><div class="sc">${fmt(row.score)} 分</div>`
+      : '';
+    const wasShown = el.classList.contains('shown');
+    el.classList.toggle('shown', revealed.has(rank));
+    if(revealed.has(rank) && !wasShown && prev.phase && (prev.phase === 'podium')){
+      SFX.fanfare(rank === 1);
+      if(rank === 1) confetti();
+    }
+  });
+
+  const next = order[s.podiumStep];
+  $('pd-sub').textContent = s.phase === 'final' ? `恭喜!共 ${s.playerCount} 人參加`
+    : s.podiumStep === 0 ? '全部題目結束,最後的名次是⋯⋯' : '';
+
+  $('pd-rest').innerHTML = s.phase === 'final'
+    ? s.board.slice(3).map(r => `<span>${r.rank}. <b>${esc(r.name)}</b> ${fmt(r.score)}</span>`).join('')
+    : '';
+}
+
+/* ═══════════ controls ═══════════ */
+function nextLabel(){
+  const s = S;
+  switch(s.phase){
+    case 'lobby': {
+      if(!s.playerCount) return ['等玩家加入⋯', true];
+      const { ok, total } = clipStats();
+      return [ok < total ? `開始遊戲(音樂 ${ok}/${total})` : '開始遊戲', false];
+    }
+    case 'countdown': return ['準備中⋯', true];
+    case 'question':  return ['提早結束這題', false];
+    case 'reveal':    return ['看排行榜', false];
+    case 'board':     return [s.index < s.questions.length - 1 ? '下一題' : '進入頒獎典禮', false];
+    case 'podium': {
+      const order = podiumOrder(s.board.length);
+      const r = order[s.podiumStep];
+      return [drumming ? '⋯⋯' : `揭曉第 ${['', '一', '二', '三'][r]} 名`, drumming];
+    }
+    case 'final': return ['再玩一局(保留玩家)', false];
+  }
+  return ['', true];
+}
+
+function renderControls(){
+  const [label, disabled] = nextLabel();
+  const b = $('btn-next');
+  b.hidden = !label;
+  b.textContent = label;
+  b.disabled = disabled;
+  // "Start" before every clip is ready is allowed, but the operator should see it is a risk
+  const alt = $('btn-alt');
+  alt.hidden = S.phase !== 'final';
+  alt.textContent = '結束並清空玩家';
+}
+
+let drumming = false;
+function next(){
+  if($('btn-next').disabled || $('btn-next').hidden) return;
+  actx();
+  if(S.phase === 'final') return send({ t: 'restart' });
+  if(S.phase === 'podium'){
+    // the drumroll runs here, before the server knows — phones cannot spoil the reveal
+    const r = podiumOrder(S.board.length)[S.podiumStep];
+    const el = $('pl-' + r);
+    const secs = r === 1 ? 3.2 : 2.2;
+    drumming = true; renderControls();
+    el.classList.add('drum');
+    SFX.drum(secs);
+    setTimeout(() => { drumming = false; el.classList.remove('drum'); send({ t: 'next' }); }, secs * 1000);
+    return;
+  }
+  send({ t: 'next' });
+}
+$('btn-next').addEventListener('click', next);
+let altArmed = false;
+$('btn-alt').addEventListener('click', () => {
+  if(!altArmed){ altArmed = true; $('btn-alt').textContent = '再按一次確定'; setTimeout(() => { altArmed = false; renderControls(); }, 3000); return; }
+  altArmed = false; send({ t: 'reset' });
+});
+document.addEventListener('keydown', e => {
+  if(e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if(e.key === ' ' || e.key === 'ArrowRight' || e.key === 'Enter' || e.key === 'PageDown'){
+    e.preventDefault();
+    if(!$('ov-start').hidden){ $('btn-unlock').click(); return; }
+    next();
+  }
+});
+
+/* ═══════════ confetti ═══════════ */
+function confetti(){
+  const cv = $('confetti'), c = cv.getContext('2d');
+  cv.width = innerWidth; cv.height = innerHeight;
+  const colors = ['#F2C86A', '#CFCAF0', '#E08098', '#7FD69A', '#FFFFFF'];
+  const parts = Array.from({ length: 260 }, () => ({
+    x: innerWidth / 2 + (Math.random() - .5) * innerWidth * .3, y: innerHeight * .45,
+    vx: (Math.random() - .5) * 26, vy: -Math.random() * 26 - 8,
+    w: 6 + Math.random() * 8, h: 10 + Math.random() * 10, r: Math.random() * 6, vr: (Math.random() - .5) * .4,
+    col: colors[Math.floor(Math.random() * colors.length)]
+  }));
+  const t0 = performance.now();
+  const frame = () => {
+    const t = performance.now() - t0;
+    c.clearRect(0, 0, cv.width, cv.height);
+    for(const p of parts){
+      p.vy += .55; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      c.save(); c.translate(p.x, p.y); c.rotate(p.r); c.fillStyle = p.col;
+      c.globalAlpha = Math.max(0, 1 - t / 6000);
+      c.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); c.restore();
+    }
+    if(t < 6000) requestAnimationFrame(frame); else c.clearRect(0, 0, cv.width, cv.height);
+  };
+  frame();
+}
+
+connect();
+</script>
+</body>
+</html>
