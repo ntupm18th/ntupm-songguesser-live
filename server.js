@@ -172,14 +172,28 @@ function playerView(p, order){
   return v;
 }
 
+/* Top n, plus whoever was in the top n before this question and has dropped
+   out — the host animates the board from the old order to the new one, so it
+   needs the leavers too (they slide off the bottom). Leavers come last and
+   carry rank > n.
+
+   Previous ranks are recomputed over players still in the game, so a kick
+   does not leave a hole in the old order. Before the first question the
+   order is only join order, so there is no previous board at all. */
 function boardRows(order, n){
-  // before the first question the order is just join order: no arrows yet
-  const prev = new Map(G.index > 0 ? G.lastBoard.map((pid, i) => [pid, i + 1]) : []);
-  return order.slice(0, n).map((p, i) => ({
-    pid: p.pid, name: p.name, score: p.score, rank: i + 1,
-    prevRank: prev.get(p.pid) || null,
-    gained: G.index >= 0 && p.answers[G.index] ? p.answers[G.index].gained : 0
-  }));
+  const prevOrder = G.index > 0 ? G.lastBoard.filter(pid => players.has(pid)) : [];
+  const prev = new Map(prevOrder.map((pid, i) => [pid, i + 1]));
+  const row = p => {
+    const gained = G.index >= 0 && p.answers[G.index] ? p.answers[G.index].gained : 0;
+    return {
+      pid: p.pid, name: p.name, score: p.score, rank: order.indexOf(p) + 1,
+      prevRank: prev.get(p.pid) || null, prevScore: p.score - gained, gained
+    };
+  };
+  const top = order.slice(0, n);
+  const inTop = new Set(top.map(p => p.pid));
+  const leavers = prevOrder.slice(0, n).filter(pid => !inTop.has(pid)).map(pid => players.get(pid));
+  return top.concat(leavers).map(row);
 }
 
 function hostView(){
@@ -214,7 +228,7 @@ function hostView(){
   }
   if(G.phase === 'podium' || G.phase === 'final'){
     v.podiumStep = G.podiumStep;
-    v.board = boardRows(order, 10);
+    v.board = order.slice(0, 10).map((p, i) => ({ pid: p.pid, name: p.name, score: p.score, rank: i + 1 }));
   }
   return v;
 }

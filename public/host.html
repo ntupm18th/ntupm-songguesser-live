@@ -105,21 +105,28 @@ body{overflow:hidden;height:100vh}
 .bhead{display:flex;align-items:baseline;justify-content:space-between}
 .bhead h2{margin:0;font-weight:var(--w-title);font-size:3.2rem;color:var(--foam)}
 .bhead span{font-size:1.4rem;color:var(--dim)}
-.blist{flex:1;min-height:0;display:flex;flex-direction:column;gap:.5rem;padding-bottom:4rem}
+/* rows are absolutely placed and moved with transform, so reordering can
+   animate; overflow clips anyone sliding out below tenth place */
+.blist{flex:1;min-height:0;position:relative;overflow:hidden;margin-bottom:4rem}
 .brow{
-  flex:1;max-height:5.6rem;display:grid;grid-template-columns:4.5rem 2.6rem 1fr auto 9rem;align-items:center;gap:1.2rem;
-  padding:0 1.6rem;border-radius:.8rem;background:rgba(23,26,51,.8);box-shadow:inset 0 0 0 1px var(--line);
-  animation:rowin .45s var(--ease) backwards;
+  position:absolute;left:0;right:0;top:0;
+  display:grid;grid-template-columns:4.5rem 3.4rem 1fr auto 9rem;align-items:center;gap:1.2rem;
+  padding:0 1.6rem;border-radius:.8rem;background:rgba(23,26,51,.92);box-shadow:inset 0 0 0 1px var(--line);
+  transition:transform 1s cubic-bezier(.5,0,.2,1),opacity .7s var(--ease),background .6s var(--ease),box-shadow .6s var(--ease);
+  will-change:transform;
 }
-@keyframes rowin{from{opacity:0;transform:translateX(-2rem)}to{opacity:1;transform:none}}
+.blist.still .brow{transition:none !important}
 .brow .rk{font-weight:var(--w-title);font-size:2.2rem;color:var(--dim);font-variant-numeric:tabular-nums}
 .brow.top .rk{color:var(--bottle)}
-.brow:first-child{background:rgba(242,200,106,.14);box-shadow:inset 0 0 0 1px rgba(242,200,106,.5)}
-.brow .mv{font-size:1.2rem;font-weight:var(--w-strong);text-align:center}
+.brow.lead{background:rgb(54,50,52);box-shadow:inset 0 0 0 1px rgba(242,200,106,.6)}
+.brow .mv{font-size:1.2rem;font-weight:var(--w-strong);text-align:center;opacity:0;transform:translateY(.4rem);transition:opacity .4s var(--ease),transform .4s var(--ease)}
+.brow.moved .mv{opacity:1;transform:none}
 .brow .mv.up{color:#7FD69A}.brow .mv.down{color:var(--miss)}.brow .mv.same{color:rgba(207,202,240,.3)}
 .brow .nm{font-weight:var(--w-item);font-size:2rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.brow .gd{font-size:1.3rem;color:var(--bottle);font-variant-numeric:tabular-nums}
+.brow .gd{font-size:1.3rem;color:var(--bottle);font-variant-numeric:tabular-nums;opacity:0;transform:scale(.5);transition:opacity .3s var(--ease),transform .45s cubic-bezier(.3,1.6,.5,1)}
+.brow.gain .gd{opacity:1;transform:none}
 .brow .gd.zero{color:rgba(207,202,240,.3)}
+.bempty{padding:3rem 0;font-size:1.6rem;color:var(--dim);text-align:center}
 .brow .sc{font-weight:var(--w-title);font-size:2.2rem;text-align:right;font-variant-numeric:tabular-nums}
 
 /* ── podium ── */
@@ -705,20 +712,112 @@ function renderReveal(s, changed){
     `<span class="rate">答對 <b>${fmt(s.right)}</b> 人 · 答對率 ${rate}%</span>`;
 }
 
-/* ── leaderboard ── */
+/* ── leaderboard ──
+   Top 10 only, animated from the order before this question to the order
+   after it, in three beats:
+
+     1. the old board, old scores                       (0s)
+     2. "+points" pop in, scores count up in place      (0.6s)
+     3. rows slide to their new places; anyone pushed
+        out of the top 10 slides off the bottom and
+        newcomers rise in from below; ▲▼ appear          (1.9s)
+
+   The server sends the old top 10's leavers too (rank > 10) so they can be
+   seen leaving. After the first question there is no "before", so the rows
+   simply rise into place and count up from zero. */
+let boardTimers = [];
+const later = (ms, fn) => boardTimers.push(setTimeout(fn, ms));
+
+function countUp(el, from, to, ms){
+  if(from === to){ el.textContent = fmt(to); return; }
+  const t0 = performance.now();
+  const step = () => {
+    const k = Math.min(1, (performance.now() - t0) / ms);
+    const e = 1 - Math.pow(1 - k, 3);
+    el.textContent = fmt(Math.round(from + (to - from) * e));
+    if(k < 1) requestAnimationFrame(step);
+  };
+  step();
+}
+
 function renderBoard(s){
   showPanel('p-board');
+  boardTimers.forEach(clearTimeout); boardTimers = [];
   $('b-sub').textContent = `第 ${s.index + 1} / ${s.questions.length} 題之後 · 共 ${s.playerCount} 人`;
-  $('b-list').innerHTML = s.board.map((r, i) => {
-    let mv = '<span class="mv same">–</span>';
-    if(r.prevRank && r.prevRank > r.rank) mv = `<span class="mv up">▲${r.prevRank - r.rank}</span>`;
-    else if(r.prevRank && r.prevRank < r.rank) mv = `<span class="mv down">▼${r.rank - r.prevRank}</span>`;
-    return `<div class="brow${r.rank <= 3 ? ' top' : ''}" style="animation-delay:${(s.board.length - 1 - i) * 70}ms">
-      <span class="rk">${r.rank}</span>${mv}
-      <span class="nm">${esc(r.name)}</span>
-      <span class="gd${r.gained ? '' : ' zero'}">${r.gained ? '+' + fmt(r.gained) : '+0'}</span>
-      <span class="sc">${fmt(r.score)}</span></div>`;
-  }).join('') || '<div class="brow"><span></span><span></span><span class="nm">還沒有人</span></div>';
+
+  const list = $('b-list');
+  list.innerHTML = '';
+  if(!s.board.length){ list.innerHTML = '<div class="bempty">還沒有人</div>'; return; }
+
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const gap = 0.5 * rem;
+  const rowH = Math.min(5.6 * rem, (list.clientHeight - 9 * gap) / 10);
+  const y = rank => (Math.min(rank, 11) - 1) * (rowH + gap);   // rank 11+ = just below the visible list
+
+  const rows = s.board.map(r => {
+    const el = document.createElement('div');
+    el.className = 'brow';
+    el.style.height = rowH + 'px';
+    el.innerHTML = `<span class="rk"></span><span class="mv"></span><span class="nm">${esc(r.name)}</span>` +
+      `<span class="gd${r.gained ? '' : ' zero'}">+${fmt(r.gained)}</span><span class="sc"></span>`;
+    list.appendChild(el);
+    return { r, el, rk: el.querySelector('.rk'), sc: el.querySelector('.sc'), mv: el.querySelector('.mv') };
+  });
+
+  const place = (x, rank) => {
+    x.el.style.transform = `translateY(${y(rank)}px)`;
+    x.el.style.opacity = rank <= 10 ? 1 : 0;
+    x.rk.textContent = rank <= 10 ? rank : '';
+    x.el.classList.toggle('top', rank <= 3);
+    x.el.classList.toggle('lead', rank === 1);
+  };
+  const arrows = x => {
+    const { rank, prevRank } = x.r;
+    if(rank > 10) return;
+    if(!prevRank){ x.mv.textContent = 'NEW'; x.mv.className = 'mv up'; }   // joined after the last question
+    else if(prevRank > rank){ x.mv.textContent = `▲${prevRank - rank}`; x.mv.className = 'mv up'; }
+    else if(prevRank < rank){ x.mv.textContent = `▼${rank - prevRank}`; x.mv.className = 'mv down'; }
+    else{ x.mv.textContent = '–'; x.mv.className = 'mv same'; }
+    x.el.classList.add('moved');
+  };
+
+  // beat 0: where everyone stood before this question, with no transitions
+  const first = s.board.every(r => !r.prevRank);
+  list.classList.add('still');
+  rows.forEach(x => { place(x, first ? 11 : (x.r.prevRank || 11)); x.sc.textContent = fmt(x.r.prevScore); });
+  void list.offsetWidth;
+  list.classList.remove('still');
+
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){
+    rows.forEach(x => { place(x, x.r.rank); x.sc.textContent = fmt(x.r.score); x.el.classList.add('gain'); arrows(x); });
+    return;
+  }
+
+  if(first){
+    // rise in from the bottom, last place first, then count up
+    rows.forEach(x => {
+      x.el.style.transitionDelay = `${(10 - x.r.rank) * 60}ms`;
+      later(50, () => place(x, x.r.rank));
+    });
+    later(1100, () => rows.forEach(x => {
+      x.el.style.transitionDelay = '';
+      x.el.classList.add('gain');
+      countUp(x.sc, x.r.prevScore, x.r.score, 1000);
+    }));
+    return;
+  }
+
+  later(600, () => rows.forEach(x => {
+    if(x.r.prevRank && x.r.prevRank <= 10) x.el.classList.add('gain');
+    countUp(x.sc, x.r.prevScore, x.r.score, 1000);
+  }));
+  later(1900, () => rows.forEach(x => {
+    // climbers pass in front of the rows they overtake
+    x.el.style.zIndex = (x.r.prevRank || 99) > x.r.rank ? 2 : 1;
+    x.el.classList.add('gain');
+    place(x, x.r.rank);
+  }));
+  later(3000, () => rows.forEach(arrows));
 }
 
 /* ── podium ── */
