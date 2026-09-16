@@ -173,7 +173,7 @@ input[type=text]:focus{outline:0;border-bottom-color:var(--foam)}
   <div class="eyebrow">全部題目結束</div>
   <div class="final-title">頒獎典禮</div>
   <div class="eq"><i></i><i></i><i></i><i></i><i></i></div>
-  <div class="hint">看大螢幕,前三名即將揭曉<br><b>你的最終名次等等就會出現在這裡</b></div>
+  <div class="hint">看大螢幕,前五名即將揭曉<br><b>你的最終名次等等就會出現在這裡</b></div>
 </div>
 
 <!-- final -->
@@ -459,7 +459,7 @@ function renderResult(s){
 
 function renderFinal(s){
   $('f-name').textContent = s.name;
-  $('f-title').textContent = s.rank === 1 ? '🏆 金曲猜歌王' : s.rank <= 3 ? '登上頒獎台!' : '最終名次';
+  $('f-title').textContent = s.rank === 1 ? '🏆 金曲猜歌王' : s.rank <= 5 ? '登上頒獎台!' : '最終名次';
   $('f-rank').innerHTML = `第 ${s.rank}<small>名</small>`;
   $('f-score').textContent = fmt(s.score);
   $('f-correct').innerHTML = `${s.correctCount}<small>/ ${s.qTotal}</small>`;

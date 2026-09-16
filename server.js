@@ -93,7 +93,7 @@ const G = {
   index: -1,          // current question
   qStart: 0,          // server time the clip started
   timer: null,
-  podiumStep: 0,      // 0 = nothing revealed, 1 = third, 2 = second, 3 = first
+  podiumStep: 0,      // reveal steps done: 4th+5th together, then 3rd, 2nd, 1st (see podiumSteps)
   lastBoard: []       // ranks before the latest question, for the ↑↓ arrows
 };
 
@@ -333,6 +333,13 @@ function onAnswer(p, msg){
   }
 }
 
+/* The awards reveal, one entry per host click: 4th and 5th together, then
+   3rd, 2nd and 1st on their own. Places nobody holds are skipped, so a
+   three-player game goes straight to 3rd. host.html has the same table. */
+function podiumSteps(n){
+  return [[5, 4], [3], [2], [1]].map(s => s.filter(r => r <= n)).filter(s => s.length);
+}
+
 function hostNext(){
   switch(G.phase){
     case 'lobby':
@@ -346,7 +353,7 @@ function hostNext(){
       G.phase = 'podium'; G.podiumStep = 0; return pushAll();
     case 'podium':
       G.podiumStep++;
-      if(G.podiumStep >= Math.min(3, players.size)){ G.podiumStep = 3; G.phase = 'final'; }
+      if(G.podiumStep >= podiumSteps(players.size).length) G.phase = 'final';
       return pushAll();
   }
 }
@@ -408,7 +415,7 @@ wss.on('connection', ws => {
         case 'next': return hostNext();
         case 'rules':
           if(G.phase !== 'lobby') return;
-          RULES.questionCount = Math.min(30, Math.max(3, msg.questionCount | 0));
+          RULES.questionCount = Math.min(30, Math.max(Q.MIN_QUESTIONS, msg.questionCount | 0));
           RULES.timeLimit = Math.min(30, Math.max(5, msg.timeLimit | 0));
           G.questions = Q.buildQuestions(RULES.questionCount);
           return pushHost();

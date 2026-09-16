@@ -5,7 +5,10 @@ and plays the music through the speakers, and the audience scans a QR code and
 answers on their phones. It's built for about 200 people in one room.
 
 The song bank, the nine-option grid, the decoy rules and the scoring
-(300 + up to 700 for speed) are all the same as the solo game.
+(300 + up to 700 for speed) are all the same as the solo game. One difference:
+every game is guaranteed at least one Korean, Japanese, Taiwanese and English
+song (so the minimum is 4 questions; at 20+ questions it's two of each). The
+rule lives at the top of `lib/questions.js`.
 
 ## Running it
 
@@ -38,9 +41,12 @@ key changes every time the server starts; to keep a fixed one, set
 3. **Time's up, or everyone has answered**: the answer is revealed, with the
    number of people who picked each option. Each phone shows its points for
    the question, total score, current rank, and the gap to the player ahead.
-4. **Leaderboard**: the top 10, with rank changes (▲▼).
+4. **Leaderboard**: the top 10, animated. It starts in the previous order,
+   counts each score up, then slides rows to their new places; players pushed
+   out of the top 10 slide off the bottom, and ▲▼ show places moved.
 5. **After the last question**: the awards ceremony. Each click plays a
-   drumroll, then reveals 3rd, 2nd and 1st place in turn (1st gets confetti).
+   drumroll, then reveals: 4th and 5th together, then 3rd, 2nd and 1st
+   (1st gets confetti). The podium is laid out 4 · 2 · 1 · 3 · 5.
    Phones only show final ranks once 1st place is revealed, so nobody sees
    the result early.
 

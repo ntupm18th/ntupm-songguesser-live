@@ -133,25 +133,36 @@ body{overflow:hidden;height:100vh}
 #p-podium{align-items:center;gap:1rem}
 #p-podium h2{margin:1rem 0 0;font-weight:var(--w-title);font-size:3.6rem;color:var(--bottle);letter-spacing:.2em}
 #p-podium .sub{font-size:1.4rem;color:var(--dim);min-height:2rem}
-.podium{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:2rem;padding-bottom:5rem}
-.place{width:22rem;display:flex;flex-direction:column;align-items:center;gap:1rem}
+/* five places, laid out 4 · 2 · 1 · 3 · 5 so the podium steps down both ways */
+.podium{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:1.4rem;padding-bottom:5rem}
+.place{width:17rem;display:flex;flex-direction:column;align-items:center;gap:1rem}
+.place.p4,.place.p5{width:14rem}
 .place .who{
   text-align:center;min-height:9rem;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:.4rem;
   opacity:0;transform:translateY(2rem) scale(.9);transition:opacity .6s var(--ease),transform .6s var(--ease);
 }
 .place.shown .who{opacity:1;transform:none}
 .place .medal{font-size:4rem;line-height:1}
-.place .nm{font-weight:var(--w-title);font-size:2.6rem;line-height:1.2;max-width:22rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.place .nm{font-weight:var(--w-title);font-size:2.4rem;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.place .who{max-width:100%}
+.place .medal.plain{
+  width:3.2rem;height:3.2rem;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;font-weight:var(--w-title);background:var(--tide);color:var(--foam);box-shadow:inset 0 0 0 1px var(--line-2)
+}
+.place.p4 .nm,.place.p5 .nm{font-size:1.9rem}
+.place.p4 .sc,.place.p5 .sc{font-size:1.3rem}
 .place .sc{font-size:1.6rem;color:var(--bottle);font-variant-numeric:tabular-nums;font-weight:var(--w-strong)}
 .place .block{
   width:100%;border-radius:1rem 1rem 0 0;background:linear-gradient(180deg,var(--tide),rgba(37,44,85,.4));
   box-shadow:inset 0 1px 0 var(--line-2);display:flex;justify-content:center;padding-top:1.2rem;
   font-weight:var(--w-title);font-size:5rem;color:var(--dim);
 }
-.place.p1 .block{height:24rem;background:linear-gradient(180deg,rgba(242,200,106,.55),rgba(242,200,106,.08));color:var(--night)}
-.place.p2 .block{height:17rem}
-.place.p3 .block{height:12rem}
-.place.p1 .nm{font-size:3.4rem;color:var(--bottle)}
+.place.p1 .block{height:22rem;background:linear-gradient(180deg,rgba(242,200,106,.55),rgba(242,200,106,.08));color:var(--night)}
+.place.p2 .block{height:16rem}
+.place.p3 .block{height:11.5rem}
+.place.p4 .block{height:7.5rem;font-size:3.2rem;padding-top:.8rem}
+.place.p5 .block{height:5rem;font-size:3.2rem;padding-top:.4rem}
+.place.p1 .nm{font-size:3rem;color:var(--bottle)}
 .place.p1.shown .who{animation:champ 1.2s var(--ease)}
 @keyframes champ{0%{transform:scale(.4)}60%{transform:scale(1.15)}100%{transform:none}}
 .place.drum .block{animation:shake .12s linear infinite}
@@ -236,9 +247,11 @@ body{overflow:hidden;height:100vh}
   <h2>頒獎典禮</h2>
   <div class="sub" id="pd-sub"></div>
   <div class="podium">
+    <div class="place p4" id="pl-4"><div class="who"></div><div class="block">4</div></div>
     <div class="place p2" id="pl-2"><div class="who"></div><div class="block">2</div></div>
     <div class="place p1" id="pl-1"><div class="who"></div><div class="block">1</div></div>
     <div class="place p3" id="pl-3"><div class="who"></div><div class="block">3</div></div>
+    <div class="place p5" id="pl-5"><div class="who"></div><div class="block">5</div></div>
   </div>
   <div class="rest" id="pd-rest"></div>
 </div>
@@ -822,37 +835,41 @@ function renderBoard(s){
 
 /* ── podium ── */
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
-function podiumOrder(n){ return [3, 2, 1].filter(r => r <= n); }   // reveal order
+const CN = ['', '一', '二', '三', '四', '五'];
+/* One entry per click: 4th and 5th together, then 3rd, 2nd, 1st.
+   Same table as podiumSteps() in server.js — keep them in step. */
+function podiumSteps(n){
+  return [[5, 4], [3], [2], [1]].map(s => s.filter(r => r <= n)).filter(s => s.length);
+}
 
 function renderPodium(s, prev){
   showPanel('p-podium');
-  const order = podiumOrder(s.board.length);
-  const revealed = new Set(order.slice(0, s.podiumStep));
-  if(s.phase === 'final') order.forEach(r => revealed.add(r));
+  const steps = podiumSteps(s.board.length);
+  const revealed = new Set(steps.slice(0, s.podiumStep).flat());
+  if(s.phase === 'final') steps.flat().forEach(r => revealed.add(r));
 
-  [1, 2, 3].forEach(rank => {
+  [1, 2, 3, 4, 5].forEach(rank => {
     const el = $('pl-' + rank);
     const row = s.board[rank - 1];
     el.hidden = !row;
     if(!row) return;
     el.classList.remove('drum');
     el.querySelector('.who').innerHTML = revealed.has(rank)
-      ? `<div class="medal">${MEDAL[rank]}</div><div class="nm">${esc(row.name)}</div><div class="sc">${fmt(row.score)} 分</div>`
+      ? `${MEDAL[rank] ? `<div class="medal">${MEDAL[rank]}</div>` : `<div class="medal plain">${rank}</div>`}<div class="nm">${esc(row.name)}</div><div class="sc">${fmt(row.score)} 分</div>`
       : '';
     const wasShown = el.classList.contains('shown');
     el.classList.toggle('shown', revealed.has(rank));
     if(revealed.has(rank) && !wasShown && prev.phase && (prev.phase === 'podium')){
-      SFX.fanfare(rank === 1);
+      if(rank !== 5) SFX.fanfare(rank === 1);   // 4th and 5th land together: one fanfare
       if(rank === 1) confetti();
     }
   });
 
-  const next = order[s.podiumStep];
   $('pd-sub').textContent = s.phase === 'final' ? `恭喜!共 ${s.playerCount} 人參加`
     : s.podiumStep === 0 ? '全部題目結束,最後的名次是⋯⋯' : '';
 
   $('pd-rest').innerHTML = s.phase === 'final'
-    ? s.board.slice(3).map(r => `<span>${r.rank}. <b>${esc(r.name)}</b> ${fmt(r.score)}</span>`).join('')
+    ? s.board.slice(5).map(r => `<span>${r.rank}. <b>${esc(r.name)}</b> ${fmt(r.score)}</span>`).join('')
     : '';
 }
 
@@ -870,9 +887,8 @@ function nextLabel(){
     case 'reveal':    return ['看排行榜', false];
     case 'board':     return [s.index < s.questions.length - 1 ? '下一題' : '進入頒獎典禮', false];
     case 'podium': {
-      const order = podiumOrder(s.board.length);
-      const r = order[s.podiumStep];
-      return [drumming ? '⋯⋯' : `揭曉第 ${['', '一', '二', '三'][r]} 名`, drumming];
+      const ranks = podiumSteps(s.board.length)[s.podiumStep] || [];
+      return [drumming ? '⋯⋯' : `揭曉第${ranks.slice().sort().map(r => CN[r]).join('、')}名`, drumming];
     }
     case 'final': return ['再玩一局(保留玩家)', false];
   }
@@ -898,13 +914,13 @@ function next(){
   if(S.phase === 'final') return send({ t: 'restart' });
   if(S.phase === 'podium'){
     // the drumroll runs here, before the server knows — phones cannot spoil the reveal
-    const r = podiumOrder(S.board.length)[S.podiumStep];
-    const el = $('pl-' + r);
-    const secs = r === 1 ? 3.2 : 2.2;
+    const ranks = podiumSteps(S.board.length)[S.podiumStep] || [];
+    const els = ranks.map(r => $('pl-' + r));
+    const secs = ranks.includes(1) ? 3.2 : 2.2;
     drumming = true; renderControls();
-    el.classList.add('drum');
+    els.forEach(el => el.classList.add('drum'));
     SFX.drum(secs);
-    setTimeout(() => { drumming = false; el.classList.remove('drum'); send({ t: 'next' }); }, secs * 1000);
+    setTimeout(() => { drumming = false; els.forEach(el => el.classList.remove('drum')); send({ t: 'next' }); }, secs * 1000);
     return;
   }
   send({ t: 'next' });
