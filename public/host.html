@@ -112,7 +112,7 @@ body{overflow:hidden;height:100vh}
 .blist{flex:1;min-height:0;position:relative;overflow:hidden;margin-bottom:4rem}
 .brow{
   position:absolute;left:0;right:0;top:0;
-  display:grid;grid-template-columns:4.5rem 3.4rem 1fr auto 9rem;align-items:center;gap:1.2rem;
+  display:grid;grid-template-columns:4.5rem 3.4rem 1fr auto 9rem 2.6rem;align-items:center;gap:1.2rem;
   padding:0 1.6rem;border-radius:.8rem;background:rgba(23,26,51,.92);box-shadow:inset 0 0 0 1px var(--line);
   transition:transform 1s cubic-bezier(.5,0,.2,1),opacity .7s var(--ease),background .6s var(--ease),box-shadow .6s var(--ease);
   will-change:transform;
@@ -129,6 +129,14 @@ body{overflow:hidden;height:100vh}
 .brow.gain .gd{opacity:1;transform:none}
 .brow .gd.zero{color:rgba(207,202,240,.3)}
 .bempty{padding:3rem 0;font-size:1.6rem;color:var(--dim);text-align:center}
+/* ⋯ on each row opens a one-item menu: remove a player whose name slipped past the filter */
+.brow .act{position:relative;display:flex;justify-content:center}
+.brow .more{width:2.6rem;height:2.6rem;border-radius:.5rem;font-size:1.5rem;line-height:1;color:rgba(207,202,240,.3);transition:color .2s,background .2s}
+.brow .more:hover,.brow .more[aria-expanded="true"]{color:var(--foam);background:var(--tide)}
+.bmenu{position:absolute;right:calc(100% + .4rem);top:50%;transform:translateY(-50%);padding:.3rem;border-radius:.6rem;
+  background:var(--deep);box-shadow:inset 0 0 0 1px var(--line-2),0 .6rem 1.6rem rgba(0,0,0,.5)}
+.bmenu button{display:block;white-space:nowrap;font-size:1.2rem;padding:.55rem 1.3rem;border-radius:.4rem;color:var(--miss)}
+.bmenu button:hover{background:rgba(224,128,152,.14)}
 .brow .sc{font-weight:var(--w-title);font-size:2.2rem;text-align:right;font-variant-numeric:tabular-nums}
 
 /* ── podium ── */
@@ -555,7 +563,10 @@ function render(s){
     case 'countdown':if(changed) renderCountdown(s); break;
     case 'question': renderQuestion(s, changed); break;
     case 'reveal':   renderReveal(s, changed); break;
-    case 'board':    if(changed) renderBoard(s); break;
+    case 'board':
+      if(changed) renderBoard(s);
+      else if(boardKey(prev) !== boardKey(s)) renderBoard(s, true);   // someone was removed: redraw in place
+      break;
     case 'podium':
     case 'final':    renderPodium(s, prev); break;
   }
@@ -762,7 +773,9 @@ function countUp(el, from, to, ms){
   step();
 }
 
-function renderBoard(s){
+const boardKey = s => (s.board || []).map(r => r.pid).join();
+
+function renderBoard(s, still){
   showPanel('p-board');
   boardTimers.forEach(clearTimeout); boardTimers = [];
   $('b-sub').textContent = `第 ${s.index + 1} / ${s.questions.length} 題之後 · 共 ${s.playerCount} 人`;
@@ -781,7 +794,9 @@ function renderBoard(s){
     el.className = 'brow';
     el.style.height = rowH + 'px';
     el.innerHTML = `<span class="rk"></span><span class="mv"></span><span class="nm">${esc(r.name)}</span>` +
-      `<span class="gd${r.gained ? '' : ' zero'}">+${fmt(r.gained)}</span><span class="sc"></span>`;
+      `<span class="gd${r.gained ? '' : ' zero'}">+${fmt(r.gained)}</span><span class="sc"></span>` +
+      `<span class="act"><button class="more" aria-label="更多" aria-expanded="false">⋯</button></span>`;
+    el.dataset.pid = r.pid;
     list.appendChild(el);
     return { r, el, rk: el.querySelector('.rk'), sc: el.querySelector('.sc'), mv: el.querySelector('.mv') };
   });
@@ -803,17 +818,22 @@ function renderBoard(s){
     x.el.classList.add('moved');
   };
 
-  // beat 0: where everyone stood before this question, with no transitions
+  // after the first question there is no "before", so no ▲▼ either
   const first = s.board.every(r => !r.prevRank);
+
+  // no animation: straight to the final board
   list.classList.add('still');
+  if(still || matchMedia('(prefers-reduced-motion: reduce)').matches){
+    rows.forEach(x => { place(x, x.r.rank); x.sc.textContent = fmt(x.r.score); x.el.classList.add('gain'); if(!first) arrows(x); });
+    void list.offsetWidth;
+    list.classList.remove('still');
+    return;
+  }
+
+  // beat 0: where everyone stood before this question, with no transitions
   rows.forEach(x => { place(x, first ? 11 : (x.r.prevRank || 11)); x.sc.textContent = fmt(x.r.prevScore); });
   void list.offsetWidth;
   list.classList.remove('still');
-
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches){
-    rows.forEach(x => { place(x, x.r.rank); x.sc.textContent = fmt(x.r.score); x.el.classList.add('gain'); arrows(x); });
-    return;
-  }
 
   if(first){
     // rise in from the bottom, last place first, then count up
@@ -841,6 +861,36 @@ function renderBoard(s){
   }));
   later(3000, () => rows.forEach(arrows));
 }
+
+function closeRowMenus(){
+  document.querySelectorAll('.bmenu').forEach(m => m.remove());
+  document.querySelectorAll('.brow .more[aria-expanded="true"]').forEach(b => {
+    b.setAttribute('aria-expanded', 'false');
+    b.closest('.brow').style.zIndex = b.dataset.z || '';
+  });
+}
+$('b-list').addEventListener('click', e => {
+  const more = e.target.closest('.more');
+  if(more){
+    const open = more.getAttribute('aria-expanded') === 'true';
+    closeRowMenus();
+    if(open) return;
+    const row = more.closest('.brow');
+    more.dataset.z = row.style.zIndex;
+    row.style.zIndex = 5;   // above the rows around it
+    more.setAttribute('aria-expanded', 'true');
+    const menu = document.createElement('div');
+    menu.className = 'bmenu';
+    menu.innerHTML = '<button class="del">刪除</button>';
+    more.parentNode.appendChild(menu);
+    return;
+  }
+  if(e.target.closest('.del')){
+    send({ t: 'kick', pid: e.target.closest('.brow').dataset.pid });
+    closeRowMenus();
+  }
+});
+document.addEventListener('click', e => { if(!e.target.closest('.brow .act')) closeRowMenus(); });
 
 /* ── podium ── */
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
