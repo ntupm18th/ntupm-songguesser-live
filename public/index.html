@@ -71,6 +71,8 @@ input[type=text]:focus{outline:0;border-bottom-color:var(--foam)}
 .verdict.good{color:var(--bottle)}
 .verdict.bad{color:var(--miss)}
 .gain{font-size:1.266rem;font-weight:var(--w-strong);color:var(--bottle);font-variant-numeric:tabular-nums;margin-top:var(--s2)}
+.x2{color:var(--bottle);font-weight:var(--w-strong)}
+.cd-x2{font-size:1.5rem;letter-spacing:.1em}
 .gain.zero{color:var(--dim);font-weight:var(--w-body);font-size:1rem}
 .song{margin-top:var(--s3);font-size:.875rem;color:var(--dim);line-height:1.8}
 .song b{color:var(--foam);font-weight:var(--w-item)}
@@ -136,6 +138,7 @@ input[type=text]:focus{outline:0;border-bottom-color:var(--foam)}
 <!-- countdown -->
 <div class="screen center" id="s-cd" hidden>
   <div class="cd-q" id="cd-q">第 1 題</div>
+  <div class="x2 cd-x2" id="cd-x2" hidden>最後一題 · 分數加倍!</div>
   <div class="cd-n" id="cd-n">3</div>
   <div class="hint">仔細聽 —— 歌一出來就搶答</div>
 </div>
@@ -314,6 +317,7 @@ function render(s){
 
     case 'countdown': {
       $('cd-q').textContent = `第 ${s.qIndex + 1} 題 / 共 ${s.qTotal} 題`;
+      $('cd-x2').hidden = !s.double;
       show('s-cd');
       const end = performance.now() + s.remaining;
       const step = () => {
@@ -364,7 +368,7 @@ let myPick = null;   // local pick, shown before the server confirms it
 
 function buildGrid(s){
   myPick = null;
-  $('q-num').textContent = `第 ${s.qIndex + 1} 題,共 ${s.qTotal} 題`;
+  $('q-num').innerHTML = `第 ${s.qIndex + 1} 題,共 ${s.qTotal} 題` + (s.double ? ' · <span class="x2">雙倍分數</span>' : '');
   $('q-foot').textContent = '聽大螢幕,選出這首歌';
   const grid = $('q-grid');
   grid.innerHTML = '';
@@ -445,7 +449,7 @@ function renderResult(s){
   const v = $('r-verdict'), g = $('r-gain');
   if(s.correct){
     v.textContent = '答對了!'; v.className = 'verdict good';
-    g.textContent = `+${fmt(s.gained)} 分`; g.className = 'gain';
+    g.textContent = `+${fmt(s.gained)} 分` + (s.double ? '(雙倍)' : ''); g.className = 'gain';
   }else{
     v.textContent = s.choice == null ? '沒有作答' : '答錯了'; v.className = 'verdict bad';
     g.textContent = '這題 +0 分'; g.className = 'gain zero';

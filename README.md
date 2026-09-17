@@ -31,7 +31,8 @@ key changes every time the server starts; to keep a fixed one, set
 ## How the game runs
 
 1. **Lobby**: the big screen shows the QR code and names appear as people
-   join. You can set the question count and seconds per question here.
+   join. You can set the question count and seconds per question here, and turn on
+   "最後一題雙倍" (the last question scores double; off by default).
    "音樂 10/10 首已就緒" means every clip has been downloaded. Clicking a name
    twice removes that player (for nicknames that shouldn't be on a big
    screen).

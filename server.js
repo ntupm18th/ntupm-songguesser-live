@@ -24,10 +24,13 @@ const RULES = {
   timeLimit: 12,          // seconds per question
   baseScore: 300,         // same scoring as the solo game: 300 + up to 700 for speed
   speedScore: 700,
+  doubleLast: false,      // host option: the last question scores double
   countdownMs: 3000,      // "第 N 題" card before the clip starts
   graceMs: 1000,          // late answers still in flight when the clock hits zero
   maxLatencyCredit: 1000  // how much of a phone's network delay we refund, at most
 };
+
+const isDouble = i => RULES.doubleLast && i === G.questions.length - 1;
 
 /* ═══════════ static files ═══════════ */
 
@@ -148,14 +151,15 @@ function playerView(p, order){
   if(G.phase === 'lobby') return Object.assign(v, { count: players.size });
 
   if(G.phase === 'countdown'){
-    return Object.assign(v, { qIndex: G.index, qTotal: G.questions.length, remaining: G.qStart - Date.now() });
+    return Object.assign(v, { qIndex: G.index, qTotal: G.questions.length, remaining: G.qStart - Date.now(), double: isDouble(G.index) });
   }
   if(G.phase === 'question'){
     const a = p.answers[G.index];
     return Object.assign(v, questionPublic(), {
       timeLimit: RULES.timeLimit,
       remaining: Math.max(0, RULES.timeLimit * 1000 - (Date.now() - G.qStart)),
-      choice: a ? a.choice : null
+      choice: a ? a.choice : null,
+      double: isDouble(G.index)
     });
   }
   if(G.phase === 'reveal' || G.phase === 'board'){
@@ -164,7 +168,7 @@ function playerView(p, order){
     return Object.assign(v, questionPublic(), {
       answer: q.answer, title: q.title, artist: q.artist,
       choice: a ? a.choice : null, correct: !!(a && a.correct), gained: a ? a.gained : 0,
-      last: G.index === G.questions.length - 1
+      last: G.index === G.questions.length - 1, double: isDouble(G.index)
     }, standing(p, order));
   }
   if(G.phase === 'podium') return v;   // no spoilers until the host has revealed first place
@@ -320,7 +324,7 @@ function onAnswer(p, msg){
 
   const q = G.questions[G.index];
   const correct = choice === q.answer;
-  const gained = correct ? Math.round(RULES.baseScore + RULES.speedScore * (1 - ms / limit)) : 0;
+  const gained = correct ? Math.round(RULES.baseScore + RULES.speedScore * (1 - ms / limit)) * (isDouble(G.index) ? 2 : 1) : 0;
   p.answers[G.index] = { choice, ms, gained, correct };
   if(correct){ p.score += gained; p.time += ms; p.correct++; }
 
@@ -378,13 +382,35 @@ function resetGame(keepPlayers){
 
 /* ═══════════ names ═══════════ */
 
-const BANNED = ['幹','靠北','靠杯','白痴','白癡','智障','媽的','雞掰','機掰','三小','屁眼','懶叫','lp','fuck','shit','bitch','dick'];
+const BANNED = [
+  // profanity
+  '幹','靠北','靠杯','靠腰','白痴','白癡','智障','低能','腦殘','媽的','他媽','你媽','雞掰','機掰','雞巴','三小','北七',
+  '屁眼','懶叫','懶趴','屌','肏','操你','操他','傻逼','煞筆','婊','賤人','去死',
+  'lp','fuck','shit','bitch','dick','cunt','pussy','cock','slut','whore','retard',
+  // racist and hateful
+  '黑鬼','尼哥','尼格','黑奴','支那','阿三','娘炮','人妖',
+  'nigger','nigga','negro','faggot','nazi','hitler','kkk',
+  // sexual
+  '淫','強姦','性交','口交','打炮','約炮','做愛','奶子','陰莖','陰道','雞雞','porn','penis','vagina'
+];
+// ordinary words that contain a banned one
+const ALLOWED = ['幹部','樹幹','能幹','幹勁','骨幹','主幹','才幹','幹練','苦幹','實幹','精幹','軀幹','幹道'];
+const LEET = { '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', '$': 's' };
+function hasBanned(name){
+  // ｆｕｃｋ, f.u.c.k, F u C k, 黑_鬼 and sh1t all count
+  const low = name.normalize('NFKC').toLowerCase();
+  const plain = low.replace(/[^\p{L}\p{N}]/gu, '');
+  const leet = low.replace(/[013457@$]/g, c => LEET[c]).replace(/[^\p{L}\p{N}]/gu, '');
+  return [plain, leet].some(s => {
+    for(const w of ALLOWED) s = s.split(w).join('');
+    return BANNED.some(w => s.includes(w));
+  });
+}
 function nameError(raw){
   const n = String(raw || '').trim();
   if([...n].length < 1) return '請輸入暱稱';
   if([...n].length > 8) return '暱稱最多 8 個字';
-  const low = n.toLowerCase().replace(/\s+/g, '');
-  if(BANNED.some(w => low.includes(w))) return '這個暱稱會出現在大螢幕上,換一個吧';
+  if(hasBanned(n)) return '這個暱稱會出現在大螢幕上,換一個吧';
   for(const p of players.values()) if(p.name.toLowerCase() === n.toLowerCase()) return '這個暱稱有人用了,換一個吧';
   return null;
 }
@@ -413,12 +439,18 @@ wss.on('connection', ws => {
       if(ws !== host) return;
       switch(msg.t){
         case 'next': return hostNext();
-        case 'rules':
+        case 'rules': {
           if(G.phase !== 'lobby') return;
-          RULES.questionCount = Math.min(30, Math.max(Q.MIN_QUESTIONS, msg.questionCount | 0));
-          RULES.timeLimit = Math.min(30, Math.max(5, msg.timeLimit | 0));
-          G.questions = Q.buildQuestions(RULES.questionCount);
+          const count = Math.min(30, Math.max(Q.MIN_QUESTIONS, msg.questionCount | 0));
+          const time = Math.min(30, Math.max(5, msg.timeLimit | 0));
+          RULES.doubleLast = !!msg.doubleLast;
+          // toggling double points alone keeps the songs (and their downloaded clips)
+          if(count !== RULES.questionCount || time !== RULES.timeLimit){
+            RULES.questionCount = count; RULES.timeLimit = time;
+            G.questions = Q.buildQuestions(RULES.questionCount);
+          }
           return pushHost();
+        }
         case 'reroll':          // host could not load this clip
           if(G.phase !== 'lobby' && msg.index <= G.index) return;
           if(!G.questions[msg.index] || G.questions[msg.index].id !== msg.id) return;
